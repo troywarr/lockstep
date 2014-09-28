@@ -1,0 +1,38 @@
+# docs files
+
+_gh_pages
+_site
+.ruby-version
+
+# always-ignore extensions
+
+*.diff
+*.err
+*.orig
+*.log
+*.rej
+*.swo
+*.swp
+*.zip
+*.vi
+*~
+
+# OS or editor folders
+
+.DS_Store
+._*
+Thumbs.db
+.cache
+.project
+.settings
+.tmproj
+*.esproj
+nbproject
+*.sublime-project
+*.sublime-workspace
+.idea
+
+# folders
+
+node_modules
+bower_components
