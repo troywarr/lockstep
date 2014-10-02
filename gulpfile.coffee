@@ -38,13 +38,9 @@ gulp.task 'browser-sync', ->
     browser: 'google chrome'
     startPath: paths.start
 
-
-
 # clean out dist folder
 gulp.task 'clean', (done) ->
   del paths.dist, done
-
-
 
 # compile & minify scripts
 gulp.task 'scripts', ->
@@ -59,8 +55,6 @@ gulp.task 'scripts', ->
     .pipe gulpIf DEV, browserSync.reload
       stream: true
 
-
-
 # copy HTML
 gulp.task 'html', ->
   gulp
@@ -70,14 +64,10 @@ gulp.task 'html', ->
     .pipe gulpIf DEV, browserSync.reload
       stream: true
 
-
-
 # watch for changes
 gulp.task 'watch', ->
-  gulp.watch "#{paths.src}scripts/**/*", ['scripts']
+  gulp.watch "#{paths.src}*.coffee", ['scripts']
   gulp.watch "#{paths.src}*.jade", ['html']
-
-
 
 # default task: call with 'gulp' on command line
 gulp.task 'default', ->

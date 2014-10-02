@@ -11,4 +11,18 @@ html(lang="en")
 
   body
 
+    p 0
+
     script(src="lockstep.js")
+    script(src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js")
+    script.
+      var $p = $('p'); // cache jQuery object
+      var lockstep = new Lockstep({ // create a Lockstep instance
+        tick: function(info) {
+          $p.text(info.time.elapsed.milliseconds);
+        }
+      });
+      lockstep.start(); // start the timer
+      setTimeout(function() {
+        lockstep.stop();
+      }, 5 * 1000);
