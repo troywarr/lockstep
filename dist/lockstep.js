@@ -31,8 +31,9 @@
   Lockstep = (function() {
     function Lockstep() {
       this._loop = __bind(this._loop, this);
-      this._checkArguments(arguments);
-      this.settings = this._buildSettings();
+      var options;
+      options = this._checkArguments(arguments);
+      this.settings = this._buildSettings(options);
       this.running = false;
       this.count = {
         start: 0,
@@ -42,36 +43,40 @@
     }
 
     Lockstep.prototype._checkArguments = function(args) {
-      switch (args.length) {
-        case 1:
-          if (type(args[0]) === 'function') {
-            this.options = {};
-            return this.callback = args[0];
-          } else if (type(args[0]) === 'object') {
-            this.options = args[0];
-            return this.callback = args[0].step;
+      if (args.length === 0) {
+        throw new Error('No arguments supplied.');
+      } else if (args.length === 1) {
+        if (type(args[0]) === 'function') {
+          return {
+            step: args[0]
+          };
+        } else if (type(args[0]) === 'object') {
+          if (type(args[0].step) === 'function') {
+            return args[0];
           } else {
-            throw new Error('Bad arguments supplied.');
+            throw new Error('Bad arguments supplied (no valid "step" function).');
           }
-          break;
-        case 2:
-          if (type(args[0]) === 'object' && type(args[1]) === 'function') {
-            this.options = args[0];
-            return this.callback = args[1];
+        } else {
+          throw new Error('Bad arguments supplied (wrong type).');
+        }
+      } else if (args.length >= 2) {
+        if (type(args[0]) === 'object' && type(args[1]) === 'function') {
+          if (args[0].step != null) {
+            throw new Error('Bad arguments supplied (redundant "step" function).');
           } else {
-            throw new Error('Bad arguments supplied.');
+            args[0].step = args[1];
+            return args[0];
           }
-          break;
-        default:
-          throw new Error('No arguments supplied.');
+        } else {
+          throw new Error('Bad arguments supplied (wrong type).');
+        }
       }
     };
 
-    Lockstep.prototype._buildSettings = function() {
+    Lockstep.prototype._buildSettings = function(options) {
       var defaults;
       defaults = {
-        elapsed: +(new Date),
-        interval: 1000
+        elapsed: +(new Date)
       };
       return merge(defaults, this.options);
     };
@@ -124,17 +129,17 @@
     Lockstep.prototype.start = function() {
       if (!this.running) {
         this.count.start++;
-        return this.running = true;
+        this.running = true;
       }
+      return this;
     };
 
     Lockstep.prototype.stop = function() {
       if (this.running) {
-        window.cancelAnimationFrame(this.pulse);
         this.count.stop++;
         this.running = false;
-        return this._step();
       }
+      return this;
     };
 
     Lockstep.prototype.reset = function(andStop) {
@@ -142,7 +147,7 @@
       if (andStop) {
         this.stop();
       }
-      return this._step();
+      return this;
     };
 
     Lockstep.prototype.add = function(milliseconds) {};
