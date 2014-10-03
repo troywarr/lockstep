@@ -49,7 +49,7 @@
             return this.callback = args[0];
           } else if (type(args[0]) === 'object') {
             this.options = args[0];
-            return this.callback = args[0].tick;
+            return this.callback = args[0].step;
           } else {
             throw new Error('Bad arguments supplied.');
           }
@@ -112,10 +112,10 @@
 
     Lockstep.prototype._loop = function() {
       this.pulse = window.requestAnimationFrame(this._loop);
-      return this._tick();
+      return this._step();
     };
 
-    Lockstep.prototype._tick = function() {
+    Lockstep.prototype._step = function() {
       var info;
       info = this.getInfo();
       return this.callback(info);
@@ -123,7 +123,6 @@
 
     Lockstep.prototype.start = function() {
       if (!this.running) {
-        this._loop();
         this.count.start++;
         return this.running = true;
       }
@@ -134,7 +133,7 @@
         window.cancelAnimationFrame(this.pulse);
         this.count.stop++;
         this.running = false;
-        return this._tick();
+        return this._step();
       }
     };
 
@@ -143,7 +142,7 @@
       if (andStop) {
         this.stop();
       }
-      return this._tick();
+      return this._step();
     };
 
     Lockstep.prototype.add = function(milliseconds) {};
@@ -186,6 +185,14 @@
 
   })();
 
-  window.Lockstep = Lockstep;
+  if (typeof define === 'function' && (define.amd != null)) {
+    define(function() {
+      return Lockstep;
+    });
+  } else if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
+    module.exports = Lockstep;
+  } else {
+    this.Lockstep = Lockstep;
+  }
 
 }).call(this);

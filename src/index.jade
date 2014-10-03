@@ -18,7 +18,7 @@ html(lang="en")
     script.
       var $p = $('p'); // cache jQuery object
       var lockstep = new Lockstep({ // create a Lockstep instance
-        tick: function(info) {
+        step: function(info) {
           $p.text(info.time.elapsed.milliseconds);
         }
       });

@@ -43,16 +43,16 @@ class Lockstep
   _checkArguments: (args) ->
     switch args.length
       when 1
-        if type(args[0]) is 'function' # 'tick' callback only
+        if type(args[0]) is 'function' # 'step' callback only
           @options = {}
           @callback = args[0]
         else if type(args[0]) is 'object' # options object only
           @options = args[0]
-          @callback = args[0].tick
+          @callback = args[0].step
         else # bad arguments
           throw new Error('Bad arguments supplied.')
       when 2
-        if type(args[0]) is 'object' and type(args[1]) is 'function' # options object & 'tick' callback
+        if type(args[0]) is 'object' and type(args[1]) is 'function' # options object & 'step' callback
           @options = args[0]
           @callback = args[1]
         else # bad arguments
@@ -96,17 +96,17 @@ class Lockstep
   #
   _loop: =>
     @pulse = window.requestAnimationFrame(@_loop) # request next frame
-    @_tick()
+    @_step()
 
   #
-  _tick: ->
+  _step: ->
     info = @getInfo()
     @callback(info)
 
   #
   start: ->
     if not @running
-      @_loop()
+      # @_loop()
       @count.start++
       @running = true
 
@@ -116,13 +116,13 @@ class Lockstep
       window.cancelAnimationFrame(@pulse)
       @count.stop++
       @running = false
-      @_tick()
+      @_step()
 
   #
   reset: (andStop) ->
     @count.reset++
     if andStop then @stop()
-    @_tick()
+    @_step()
 
   #
   add: (milliseconds) ->
@@ -157,7 +157,7 @@ class Lockstep
   # TODO: use @when()
   every: (time, callback) ->
 
-  # call callback on each tick through a specified time period
+  # call callback on each step through a specified time period
   # TODO: use @when()
   while: (startTime, endTime, callback) ->
 
@@ -176,5 +176,11 @@ class Lockstep
 
 
 # register
+#   see: http://oli.me.uk/2013/07/21/exporting-through-amd-commonjs-and-the-global-object/
 
-window.Lockstep = Lockstep
+if typeof define is 'function' and define.amd?
+  define -> Lockstep
+else if module?.exports?
+  module.exports = Lockstep
+else
+  @Lockstep = Lockstep
