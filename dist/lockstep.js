@@ -4,6 +4,8 @@
 
   MSQTY = {};
 
+  MSQTY.milliseconds = 1;
+
   MSQTY.seconds = 1000;
 
   MSQTY.minutes = MSQTY.seconds * 60;
@@ -39,6 +41,11 @@
         start: 0,
         stop: 0,
         reset: 0
+      };
+      this.time = {
+        start: null,
+        stop: null,
+        elapsed: 0
       };
     }
 
@@ -76,9 +83,10 @@
     Lockstep.prototype._buildSettings = function(options) {
       var defaults;
       defaults = {
-        elapsed: +(new Date)
+        pad: false,
+        floor: false
       };
-      return merge(defaults, this.options);
+      return merge(defaults, options);
     };
 
     Lockstep.prototype._millisecondsToClockTime = function(ms) {
@@ -94,10 +102,10 @@
     Lockstep.prototype._millisecondsToElapsedTime = function(ms) {
       return {
         milliseconds: ms,
-        seconds: Math.floor(ms / MSQTY.seconds),
-        minutes: Math.floor(ms / MSQTY.minutes),
-        hours: Math.floor(ms / MSQTY.hours),
-        days: Math.floor(ms / MSQTY.days)
+        seconds: ms / MSQTY.seconds,
+        minutes: ms / MSQTY.minutes,
+        hours: ms / MSQTY.hours,
+        days: ms / MSQTY.days
       };
     };
 
@@ -108,8 +116,8 @@
     Lockstep.prototype._clockTimeToMilliseconds = function(clockTime) {
       var key, ms, val;
       ms = 0;
-      for (key in obj) {
-        val = obj[key];
+      for (key in clockTime) {
+        val = clockTime[key];
         ms += val * MSQTY[key];
       }
       return ms;
@@ -121,42 +129,73 @@
     };
 
     Lockstep.prototype._step = function() {
-      var info;
-      info = this.getInfo();
-      return this.callback(info);
+      return this.settings.step(this.getInfo());
     };
 
-    Lockstep.prototype.start = function() {
+    Lockstep.prototype.start = function(callback) {
+      if (callback == null) {
+        callback = this.settings.start;
+      }
       if (!this.running) {
+        this.time.start = new Date().getTime();
         this.count.start++;
         this.running = true;
+        this._loop();
+      }
+      if (typeof callback === "function") {
+        callback(this.getInfo());
       }
       return this;
     };
 
-    Lockstep.prototype.stop = function() {
+    Lockstep.prototype.stop = function(callback) {
+      if (callback == null) {
+        callback = this.settings.stop;
+      }
       if (this.running) {
+        window.cancelAnimationFrame(this.pulse);
+        this.time.stop = new Date().getTime();
+        this.time.elapsed += this.time.stop - this.time.start;
         this.count.stop++;
         this.running = false;
+        this._step();
+      }
+      if (typeof callback === "function") {
+        callback(this.getInfo());
       }
       return this;
     };
 
-    Lockstep.prototype.reset = function(andStop) {
+    Lockstep.prototype.reset = function(callback, count) {
+      if (callback == null) {
+        callback = this.settings.reset;
+      }
       this.count.reset++;
-      if (andStop) {
-        this.stop();
+      this.time.start = new Date().getTime();
+      this.time.stop = null;
+      this.time.elapsed = 0;
+      if (count) {
+        this.count.start = 0;
+        this.count.stop = 0;
+        this.count.reset = 0;
+      }
+      if (typeof callback === "function") {
+        callback(this.getInfo());
       }
       return this;
     };
 
-    Lockstep.prototype.add = function(milliseconds) {};
+    Lockstep.prototype.add = function(milliseconds) {
+      return this;
+    };
 
-    Lockstep.prototype.subtract = function(milliseconds) {};
+    Lockstep.prototype.subtract = function(milliseconds) {
+      return this;
+    };
 
     Lockstep.prototype.getInfo = function() {
       var milliseconds;
-      milliseconds = this.getMilliseconds();
+      milliseconds = this.running ? this.time.elapsed + new Date().getTime() - this.time.start : this.time.elapsed;
       return {
         time: {
           elapsed: this._millisecondsToElapsedTime(milliseconds),
@@ -166,25 +205,34 @@
       };
     };
 
-    Lockstep.prototype.getMilliseconds = function() {
-      return +(new Date) - this.settings.elapsed;
+    Lockstep.prototype.setElapsedTime = function(elapsedTime) {
+      return this;
     };
 
-    Lockstep.prototype.getElapsedTime = function() {};
+    Lockstep.prototype.when = function(time, callback) {
+      return this;
+    };
 
-    Lockstep.prototype.setElapsedTime = function(elapsedTime) {};
+    Lockstep.prototype.every = function(time, callback) {
+      return this;
+    };
 
-    Lockstep.prototype.when = function(time, callback) {};
+    Lockstep.prototype["while"] = function(startTime, endTime, callback) {
+      return this;
+    };
 
-    Lockstep.prototype.every = function(time, callback) {};
+    Lockstep.prototype.during = function(startTime, endTime, startCallback, endCallback) {
+      return this;
+    };
 
-    Lockstep.prototype["while"] = function(startTime, endTime, callback) {};
+    Lockstep.prototype.beginning = function(startTime, startCallback) {
+      this.during(startTime, Infinity, startCallback, noop);
+      return this;
+    };
 
-    Lockstep.prototype.during = function(startTime, endTime, startCallback, endCallback) {};
-
-    Lockstep.prototype.beginning = function() {};
-
-    Lockstep.prototype.ending = function() {};
+    Lockstep.prototype.ending = function(endTime, endCallback) {
+      return this;
+    };
 
     return Lockstep;
 

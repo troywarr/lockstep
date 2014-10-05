@@ -11,18 +11,114 @@ html(lang="en")
 
   body
 
-    p 0
+    h2 Clock
+    table.clock
+      tr.milliseconds
+        th Milliseconds
+        td 0
+      tr.seconds
+        th Seconds
+        td 0
+      tr.minutes
+        th Minutes
+        td 0
+      tr.hours
+        th Hours
+        td 0
+      tr.days
+        th Days
+        td 0
+
+    h2 Elapsed
+    table.elapsed
+      tr.milliseconds
+        th Milliseconds
+        td 0
+      tr.seconds
+        th Seconds
+        td 0
+      tr.minutes
+        th Minutes
+        td 0
+      tr.hours
+        th Hours
+        td 0
+      tr.days
+        th Days
+        td 0
+
+    h2 Count
+    table.count
+      tr.start
+        th Start
+        td 0
+      tr.stop
+        th Stop
+        td 0
+      tr.reset
+        th Reset
+        td 0
+
+    button.start Start
+    button.stop Stop
+    button.reset Reset
+    button.resetCount Reset with Count
 
     script(src="lockstep.js")
     script(src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js")
     script.
-      var $p = $('p'); // cache jQuery object
-      var lockstep = new Lockstep({ // create a Lockstep instance
-        step: function(info) {
-          $p.text(info.time.elapsed.milliseconds);
-        }
+      // shortcuts
+      var $buttonStart = $('button.start'),
+          $buttonStop = $('button.stop'),
+          $buttonReset = $('button.reset'),
+          $buttonResetCount = $('button.resetCount'),
+          $countStart = $('.start td'),
+          $countStop = $('.stop td'),
+          $countReset = $('.reset td'),
+          $clockMilliseconds = $('.clock .milliseconds td'),
+          $clockSeconds = $('.clock .seconds td'),
+          $clockMinutes = $('.clock .minutes td'),
+          $clockHours = $('.clock .hours td'),
+          $clockDays = $('.clock .days td'),
+          $elapsedMilliseconds = $('.elapsed .milliseconds td'),
+          $elapsedSeconds = $('.elapsed .seconds td'),
+          $elapsedMinutes = $('.elapsed .minutes td'),
+          $elapsedHours = $('.elapsed .hours td'),
+          $elapsedDays = $('.elapsed .days td');
+
+      // update everything
+      var update = function(info) {
+            // clock
+            $clockMilliseconds.text(info.time.clock.milliseconds);
+            $clockSeconds.text(info.time.clock.seconds);
+            $clockMinutes.text(info.time.clock.minutes);
+            $clockHours.text(info.time.clock.hours);
+            $clockDays.text(info.time.clock.days);
+            // elapsed
+            $elapsedMilliseconds.text(info.time.elapsed.milliseconds);
+            $elapsedSeconds.text(info.time.elapsed.seconds);
+            $elapsedMinutes.text(info.time.elapsed.minutes);
+            $elapsedHours.text(info.time.elapsed.hours);
+            $elapsedDays.text(info.time.elapsed.days);
+            // count
+            $countStart.text(info.count.start);
+            $countStop.text(info.count.stop);
+            $countReset.text(info.count.reset);
+          };
+
+      // create a new Lockstep instance
+      var lockstep = new Lockstep(update);
+
+      // set up event handlers for buttons
+      $buttonStart.click(function() {
+        lockstep.start(update);
       });
-      lockstep.start(); // start the timer
-      setTimeout(function() {
-        lockstep.stop();
-      }, 5 * 1000);
+      $buttonStop.click(function() {
+        lockstep.stop(update);
+      });
+      $buttonReset.click(function() {
+        lockstep.reset(update);
+      });
+      $buttonResetCount.click(function() {
+        lockstep.reset(update, true);
+      });

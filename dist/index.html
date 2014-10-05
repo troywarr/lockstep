@@ -1,10 +1,55 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Lockstep.js</title><meta name="description" content="A JavaScript library to create accurate timers."><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><p>0</p><script src="lockstep.js"></script><script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script><script>var $p = $('p'); // cache jQuery object
-var lockstep = new Lockstep({ // create a Lockstep instance
-  step: function(info) {
-    $p.text(info.time.elapsed.milliseconds);
-  }
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Lockstep.js</title><meta name="description" content="A JavaScript library to create accurate timers."><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h2>Clock</h2><table class="clock"><tr class="milliseconds"><th>Milliseconds</th><td>0</td></tr><tr class="seconds"><th>Seconds</th><td>0</td></tr><tr class="minutes"><th>Minutes</th><td>0</td></tr><tr class="hours"><th>Hours</th><td>0</td></tr><tr class="days"><th>Days</th><td>0</td></tr></table><h2>Elapsed</h2><table class="elapsed"><tr class="milliseconds"><th>Milliseconds</th><td>0</td></tr><tr class="seconds"><th>Seconds</th><td>0</td></tr><tr class="minutes"><th>Minutes</th><td>0</td></tr><tr class="hours"><th>Hours</th><td>0</td></tr><tr class="days"><th>Days</th><td>0</td></tr></table><h2>Count</h2><table class="count"><tr class="start"><th>Start</th><td>0</td></tr><tr class="stop"><th>Stop</th><td>0</td></tr><tr class="reset"><th>Reset</th><td>0</td></tr></table><button class="start">Start</button><button class="stop">Stop</button><button class="reset">Reset</button><button class="resetCount">Reset with Count</button><script src="lockstep.js"></script><script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script><script>// shortcuts
+var $buttonStart = $('button.start'),
+    $buttonStop = $('button.stop'),
+    $buttonReset = $('button.reset'),
+    $buttonResetCount = $('button.resetCount'),
+    $countStart = $('.start td'),
+    $countStop = $('.stop td'),
+    $countReset = $('.reset td'),
+    $clockMilliseconds = $('.clock .milliseconds td'),
+    $clockSeconds = $('.clock .seconds td'),
+    $clockMinutes = $('.clock .minutes td'),
+    $clockHours = $('.clock .hours td'),
+    $clockDays = $('.clock .days td'),
+    $elapsedMilliseconds = $('.elapsed .milliseconds td'),
+    $elapsedSeconds = $('.elapsed .seconds td'),
+    $elapsedMinutes = $('.elapsed .minutes td'),
+    $elapsedHours = $('.elapsed .hours td'),
+    $elapsedDays = $('.elapsed .days td');
+
+// update everything
+var update = function(info) {
+      // clock
+      $clockMilliseconds.text(info.time.clock.milliseconds);
+      $clockSeconds.text(info.time.clock.seconds);
+      $clockMinutes.text(info.time.clock.minutes);
+      $clockHours.text(info.time.clock.hours);
+      $clockDays.text(info.time.clock.days);
+      // elapsed
+      $elapsedMilliseconds.text(info.time.elapsed.milliseconds);
+      $elapsedSeconds.text(info.time.elapsed.seconds);
+      $elapsedMinutes.text(info.time.elapsed.minutes);
+      $elapsedHours.text(info.time.elapsed.hours);
+      $elapsedDays.text(info.time.elapsed.days);
+      // count
+      $countStart.text(info.count.start);
+      $countStop.text(info.count.stop);
+      $countReset.text(info.count.reset);
+    };
+
+// create a new Lockstep instance
+var lockstep = new Lockstep(update);
+
+// set up event handlers for buttons
+$buttonStart.click(function() {
+  lockstep.start(update);
 });
-lockstep.start(); // start the timer
-setTimeout(function() {
-  lockstep.stop();
-}, 5 * 1000);</script></body></html>
+$buttonStop.click(function() {
+  lockstep.stop(update);
+});
+$buttonReset.click(function() {
+  lockstep.reset(update);
+});
+$buttonResetCount.click(function() {
+  lockstep.reset(update, true);
+});</script></body></html>

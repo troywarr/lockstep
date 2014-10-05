@@ -1,6 +1,7 @@
 # constants
 
 MSQTY = {}
+MSQTY.milliseconds = 1
 MSQTY.seconds = 1000
 MSQTY.minutes = MSQTY.seconds * 60
 MSQTY.hours = MSQTY.minutes * 60
@@ -38,6 +39,10 @@ class Lockstep
       start: 0
       stop: 0
       reset: 0
+    @time =
+      start: null # latest timestamp when the timer was started
+      stop: null # latest timestamp when the timer was stopped
+      elapsed: 0 # total milliseconds that timer has run (not including time since last animation frame)
 
   #
   _checkArguments: (args) ->
@@ -66,9 +71,10 @@ class Lockstep
   #
   _buildSettings: (options) ->
     defaults =
-      elapsed: +new Date
-      # interval: 1000
-    merge(defaults, @options)
+      # elapsed: +new Date # integer; milliseconds at which to start elapsed time
+      pad: false # integer (or false); pads clock time to a number of places
+      floor: false # boolean; removes decimal (via Math.floor) from elapsed time
+    merge(defaults, options)
 
   #
   _millisecondsToClockTime: (ms) ->
@@ -81,10 +87,10 @@ class Lockstep
   #
   _millisecondsToElapsedTime: (ms) ->
     milliseconds: ms
-    seconds: Math.floor(ms / MSQTY.seconds)
-    minutes: Math.floor(ms / MSQTY.minutes)
-    hours: Math.floor(ms / MSQTY.hours)
-    days: Math.floor(ms / MSQTY.days)
+    seconds: ms / MSQTY.seconds
+    minutes: ms / MSQTY.minutes
+    hours: ms / MSQTY.hours
+    days: ms / MSQTY.days
 
   #
   _elapsedTimeToMilliseconds: (elapsedTime) ->
@@ -93,7 +99,7 @@ class Lockstep
   #
   _clockTimeToMilliseconds: (clockTime) ->
     ms = 0
-    ms += val * MSQTY[key] for key, val of obj
+    ms += val * MSQTY[key] for key, val of clockTime
     ms
 
   #
@@ -103,42 +109,57 @@ class Lockstep
 
   #
   _step: ->
-    info = @getInfo()
-    @callback(info)
+    @settings.step(@getInfo())
 
   #
-  start: ->
+  start: (callback = @settings.start) ->
     if not @running
-      # @_loop()
+      @time.start = new Date().getTime() # set start timestamp
       @count.start++
       @running = true
+      @_loop()
+    callback?(@getInfo()) # TODO: ensure that info is time accurate
     this
 
   #
-  stop: ->
+  stop: (callback = @settings.stop) ->
     if @running
-      # window.cancelAnimationFrame(@pulse)
+      window.cancelAnimationFrame(@pulse)
+      @time.stop = new Date().getTime() # set stop timestamp
+      @time.elapsed += @time.stop - @time.start # add elapsed time
       @count.stop++
       @running = false
-      # @_step()
+      @_step() # final step
+    callback?(@getInfo()) # TODO: ensure that info is time accurate
     this
 
   #
-  reset: (andStop) ->
+  reset: (callback = @settings.reset, count) ->
     @count.reset++
-    if andStop then @stop()
-    # @_step()
+    @time.start = new Date().getTime() # set start timestamp
+    @time.stop = null
+    @time.elapsed = 0
+    if count
+      @count.start = 0
+      @count.stop = 0
+      @count.reset = 0
+    callback?(@getInfo()) # TODO: ensure that info is time accurate
     this
 
   #
   add: (milliseconds) ->
+    this
 
   #
   subtract: (milliseconds) ->
+    this
 
   #
   getInfo: ->
-    milliseconds = @getMilliseconds()
+    milliseconds = if @running # timer is currently running
+        @time.elapsed + new Date().getTime() - @time.start
+      else # timer is stopped, or has never run
+        @time.elapsed
     {
       time:
         elapsed: @_millisecondsToElapsedTime(milliseconds)
@@ -147,46 +168,47 @@ class Lockstep
     }
 
   #
-  getMilliseconds: ->
-    +new Date - @settings.elapsed # elapsed time in milliseconds
-
-  #
-  getElapsedTime: ->
-
-  #
   setElapsedTime: (elapsedTime) ->
+    this
 
   # call callback at a specific time
   when: (time, callback) ->
+    this
 
   # call callback at a specified time interval
   # TODO: use @when()
   every: (time, callback) ->
+    this
 
   # call callback on each step through a specified time period
   # TODO: use @when()
   while: (startTime, endTime, callback) ->
+    this
 
   # call callback at the beginning of a specified time period, and another callback at the end
   # TODO: use @when()
   during: (startTime, endTime, startCallback, endCallback) ->
+    this
 
   #
   # TODO: use @during() with an infinity endTime
-  beginning: ->
+  beginning: (startTime, startCallback) ->
+    @during(startTime, Infinity, startCallback, noop)
+    this
 
   #
   # TODO: use @during() with a zero startTime
-  ending: ->
+  ending: (endTime, endCallback) ->
+    this
 
 
 
-# register
+# expose
 #   see: http://oli.me.uk/2013/07/21/exporting-through-amd-commonjs-and-the-global-object/
 
-if typeof define is 'function' and define.amd?
+if typeof define is 'function' and define.amd? # AMD
   define -> Lockstep
-else if module?.exports?
+else if module?.exports? # CommonJS
   module.exports = Lockstep
 else
-  @Lockstep = Lockstep
+  @Lockstep = Lockstep # global
