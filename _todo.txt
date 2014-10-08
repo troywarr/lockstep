@@ -4,3 +4,5 @@ use requestAnimationFrace shim when necessary
 allow supplying callbacks to .start(), .stop(), and .reset(), or as properties of constructor options (e.g., new Lockstep({ start: ->, stop: -> }))
 add 'action' options property for a callback to be run on ._step(), .start(), .stop(), and .reset() (e.g., for updating a clock face globally)
 add declarative style (e.g., add data-clock-milliseconds or something to set up automatic clock time output)
+add shim for Date.now() (see: https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Date/now)
+add shim for requestAnimationFrame (see: http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/)

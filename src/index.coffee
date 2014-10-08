@@ -1,6 +1,7 @@
 # constants
 
 MSQTY = {}
+MSQTY.microseconds = 0.001
 MSQTY.milliseconds = 1
 MSQTY.seconds = 1000
 MSQTY.minutes = MSQTY.seconds * 60
@@ -30,6 +31,22 @@ merge = (obj1, obj2) ->
   obj3[name] = obj1[name] for name of obj1
   obj3[name] = obj2[name] for name of obj2
   obj3
+
+
+
+# shims & fallbacks
+
+# use High-Resolution Time API, if available
+#   see: http://www.sitepoint.com/discovering-the-high-resolution-time-api/
+microseconds = true
+window.performance = window.performance ? {}
+performance.now = do ->
+  performance.now ?
+  performance.mozNow ?
+  performance.msNow ?
+  performance.oNow ?
+  performance.webkitNow ?
+  microseconds = false or -> Date.now() # set flag to false and fall back to Date.now()
 
 
 
@@ -91,19 +108,30 @@ class Lockstep
 
   #
   _millisecondsToClockTime: (ms) ->
-    milliseconds: ms % 1000
-    seconds: Math.floor(ms / MSQTY.seconds) % 60
-    minutes: Math.floor(ms / MSQTY.minutes) % 60
-    hours: Math.floor(ms / MSQTY.hours) % 24
-    days: Math.floor(ms / MSQTY.days)
+    if microseconds
+      clockTimeMicroseconds =
+        microseconds: Math.floor((ms % 1) / MSQTY.microseconds)
+      ms = Math.floor(ms)
+    clockTime =
+      milliseconds: ms % 1000
+      seconds: Math.floor(ms / MSQTY.seconds) % 60
+      minutes: Math.floor(ms / MSQTY.minutes) % 60
+      hours: Math.floor(ms / MSQTY.hours) % 24
+      days: Math.floor(ms / MSQTY.days)
+    merge(clockTime, clockTimeMicroseconds ? {})
 
   #
   _millisecondsToElapsedTime: (ms) ->
-    milliseconds: ms
-    seconds: ms / MSQTY.seconds
-    minutes: ms / MSQTY.minutes
-    hours: ms / MSQTY.hours
-    days: ms / MSQTY.days
+    if microseconds
+      clockTimeMicroseconds =
+        microseconds: ms / MSQTY.microseconds
+    clockTime =
+      milliseconds: ms
+      seconds: ms / MSQTY.seconds
+      minutes: ms / MSQTY.minutes
+      hours: ms / MSQTY.hours
+      days: ms / MSQTY.days
+    merge(clockTime, clockTimeMicroseconds ? {})
 
   #
   _elapsedTimeToMilliseconds: (elapsedTime) ->
@@ -135,7 +163,7 @@ class Lockstep
   #
   start: (callback = @settings.start) ->
     if not @running
-      @time.start = new Date().getTime() # set start timestamp
+      @time.start = performance.now() # set start timestamp
       @count.start++
       @running = true
       @_loop()
@@ -146,7 +174,7 @@ class Lockstep
   stop: (callback = @settings.stop) ->
     if @running
       window.cancelAnimationFrame(@pulse)
-      @time.stop = new Date().getTime() # set stop timestamp
+      @time.stop = performance.now() # set stop timestamp
       @time.elapsed += @time.stop - @time.start # add elapsed time
       @count.stop++
       @running = false
@@ -158,7 +186,7 @@ class Lockstep
   reset: (callback = @settings.reset, count) ->
     if @time.elapsed > 0 # if there's elapsed time to reset
       @count.reset++
-      @time.start = new Date().getTime() # set start timestamp
+      @time.start = performance.now() # set start timestamp
       @time.stop = null
       @time.elapsed = 0
       if count and val > 0 for key, val of @time # if there are counts to reset
@@ -179,7 +207,7 @@ class Lockstep
   #
   getInfo: ->
     milliseconds = if @running # timer is currently running
-        @time.elapsed + new Date().getTime() - @time.start
+        @time.elapsed + performance.now() - @time.start
       else # timer is stopped, or has never run
         @time.elapsed
     elapsed = @_millisecondsToElapsedTime(milliseconds)

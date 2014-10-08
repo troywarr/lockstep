@@ -1,8 +1,10 @@
 (function() {
-  var Lockstep, MSQTY, isInt, merge, noop, type,
+  var Lockstep, MSQTY, isInt, merge, microseconds, noop, type, _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   MSQTY = {};
+
+  MSQTY.microseconds = 0.001;
 
   MSQTY.milliseconds = 1;
 
@@ -35,6 +37,17 @@
     }
     return obj3;
   };
+
+  microseconds = true;
+
+  window.performance = (_ref = window.performance) != null ? _ref : {};
+
+  performance.now = (function() {
+    var _ref1, _ref2, _ref3, _ref4, _ref5;
+    return (_ref1 = (_ref2 = (_ref3 = (_ref4 = (_ref5 = performance.now) != null ? _ref5 : performance.mozNow) != null ? _ref4 : performance.msNow) != null ? _ref3 : performance.oNow) != null ? _ref2 : performance.webkitNow) != null ? _ref1 : microseconds = false || function() {
+      return Date.now();
+    };
+  })();
 
   Lockstep = (function() {
     function Lockstep() {
@@ -103,23 +116,38 @@
     };
 
     Lockstep.prototype._millisecondsToClockTime = function(ms) {
-      return {
+      var clockTime, clockTimeMicroseconds;
+      if (microseconds) {
+        clockTimeMicroseconds = {
+          microseconds: Math.floor((ms % 1) / MSQTY.microseconds)
+        };
+        ms = Math.floor(ms);
+      }
+      clockTime = {
         milliseconds: ms % 1000,
         seconds: Math.floor(ms / MSQTY.seconds) % 60,
         minutes: Math.floor(ms / MSQTY.minutes) % 60,
         hours: Math.floor(ms / MSQTY.hours) % 24,
         days: Math.floor(ms / MSQTY.days)
       };
+      return merge(clockTime, clockTimeMicroseconds != null ? clockTimeMicroseconds : {});
     };
 
     Lockstep.prototype._millisecondsToElapsedTime = function(ms) {
-      return {
+      var clockTime, clockTimeMicroseconds;
+      if (microseconds) {
+        clockTimeMicroseconds = {
+          microseconds: ms / MSQTY.microseconds
+        };
+      }
+      clockTime = {
         milliseconds: ms,
         seconds: ms / MSQTY.seconds,
         minutes: ms / MSQTY.minutes,
         hours: ms / MSQTY.hours,
         days: ms / MSQTY.days
       };
+      return merge(clockTime, clockTimeMicroseconds != null ? clockTimeMicroseconds : {});
     };
 
     Lockstep.prototype._elapsedTimeToMilliseconds = function(elapsedTime) {
@@ -159,7 +187,7 @@
         callback = this.settings.start;
       }
       if (!this.running) {
-        this.time.start = new Date().getTime();
+        this.time.start = performance.now();
         this.count.start++;
         this.running = true;
         this._loop();
@@ -176,7 +204,7 @@
       }
       if (this.running) {
         window.cancelAnimationFrame(this.pulse);
-        this.time.stop = new Date().getTime();
+        this.time.stop = performance.now();
         this.time.elapsed += this.time.stop - this.time.start;
         this.count.stop++;
         this.running = false;
@@ -195,15 +223,15 @@
       }
       if (this.time.elapsed > 0) {
         this.count.reset++;
-        this.time.start = new Date().getTime();
+        this.time.start = performance.now();
         this.time.stop = null;
         this.time.elapsed = 0;
         if ((function() {
-          var _ref, _results;
-          _ref = this.time;
+          var _ref1, _results;
+          _ref1 = this.time;
           _results = [];
-          for (key in _ref) {
-            val = _ref[key];
+          for (key in _ref1) {
+            val = _ref1[key];
             _results.push(count && val > 0);
           }
           return _results;
@@ -229,7 +257,7 @@
 
     Lockstep.prototype.getInfo = function() {
       var clock, elapsed, key, milliseconds, val;
-      milliseconds = this.running ? this.time.elapsed + new Date().getTime() - this.time.start : this.time.elapsed;
+      milliseconds = this.running ? this.time.elapsed + performance.now() - this.time.start : this.time.elapsed;
       elapsed = this._millisecondsToElapsedTime(milliseconds);
       clock = this._millisecondsToClockTime(milliseconds);
       if (this.settings.floor) {

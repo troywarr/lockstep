@@ -15,6 +15,9 @@ html(lang="en")
     section
       h2 Clock
       table.clock
+        tr.microseconds
+          th Microseconds
+          td 0
         tr.milliseconds
           th Milliseconds
           td 0
@@ -34,6 +37,9 @@ html(lang="en")
     section
       h2 Elapsed
       table.elapsed
+        tr.microseconds
+          th Microseconds
+          td 0
         tr.milliseconds
           th Milliseconds
           td 0
@@ -80,11 +86,13 @@ html(lang="en")
           $countStart = $('.start td'),
           $countStop = $('.stop td'),
           $countReset = $('.reset td'),
+          $clockMicroseconds = $('.clock .microseconds td'),
           $clockMilliseconds = $('.clock .milliseconds td'),
           $clockSeconds = $('.clock .seconds td'),
           $clockMinutes = $('.clock .minutes td'),
           $clockHours = $('.clock .hours td'),
           $clockDays = $('.clock .days td'),
+          $elapsedMicroseconds = $('.elapsed .microseconds td'),
           $elapsedMilliseconds = $('.elapsed .milliseconds td'),
           $elapsedSeconds = $('.elapsed .seconds td'),
           $elapsedMinutes = $('.elapsed .minutes td'),
@@ -94,12 +102,14 @@ html(lang="en")
       // update everything
       var update = function(info) {
             // clock
+            $clockMicroseconds.text(info.time.clock.microseconds);
             $clockMilliseconds.text(info.time.clock.milliseconds);
             $clockSeconds.text(info.time.clock.seconds);
             $clockMinutes.text(info.time.clock.minutes);
             $clockHours.text(info.time.clock.hours);
             $clockDays.text(info.time.clock.days);
             // elapsed
+            $elapsedMicroseconds.text(info.time.elapsed.microseconds);
             $elapsedMilliseconds.text(info.time.elapsed.milliseconds);
             $elapsedSeconds.text(info.time.elapsed.seconds);
             $elapsedMinutes.text(info.time.elapsed.minutes);
