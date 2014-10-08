@@ -1,5 +1,5 @@
 (function() {
-  var Lockstep, MSQTY, merge, type,
+  var Lockstep, MSQTY, isInt, merge, noop, type,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   MSQTY = {};
@@ -14,8 +14,14 @@
 
   MSQTY.days = MSQTY.hours * 24;
 
-  type = function(variable) {
-    return {}.toString.call(variable).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
+  noop = function() {};
+
+  type = function(value) {
+    return {}.toString.call(value).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
+  };
+
+  isInt = function(value) {
+    return !isNaN(value) && parseInt(Number(value)) === value && !isNaN(parseInt(value, 10));
   };
 
   merge = function(obj1, obj2) {
@@ -50,16 +56,17 @@
     }
 
     Lockstep.prototype._checkArguments = function(args) {
+      var options;
       if (args.length === 0) {
         throw new Error('No arguments supplied.');
       } else if (args.length === 1) {
         if (type(args[0]) === 'function') {
-          return {
+          options = {
             step: args[0]
           };
         } else if (type(args[0]) === 'object') {
           if (type(args[0].step) === 'function') {
-            return args[0];
+            options = args[0];
           } else {
             throw new Error('Bad arguments supplied (no valid "step" function).');
           }
@@ -72,12 +79,18 @@
             throw new Error('Bad arguments supplied (redundant "step" function).');
           } else {
             args[0].step = args[1];
-            return args[0];
+            options = args[0];
           }
         } else {
           throw new Error('Bad arguments supplied (wrong type).');
         }
       }
+      if (options.pad != null) {
+        if (!(options.pad === false || isInt(options.pad))) {
+          throw new Error('Bad arguments supplied ("pad" option must have a false or integer value).');
+        }
+      }
+      return options;
     };
 
     Lockstep.prototype._buildSettings = function(options) {
@@ -132,6 +145,15 @@
       return this.settings.step(this.getInfo());
     };
 
+    Lockstep.prototype._pad = function(int, length) {
+      int += '';
+      if (int.length >= length) {
+        return int;
+      } else {
+        return "" + (new Array(length - int.length + 1).join('0')) + "int";
+      }
+    };
+
     Lockstep.prototype.start = function(callback) {
       if (callback == null) {
         callback = this.settings.start;
@@ -141,9 +163,9 @@
         this.count.start++;
         this.running = true;
         this._loop();
-      }
-      if (typeof callback === "function") {
-        callback(this.getInfo());
+        if (typeof callback === "function") {
+          callback(this.getInfo());
+        }
       }
       return this;
     };
@@ -159,28 +181,40 @@
         this.count.stop++;
         this.running = false;
         this._step();
-      }
-      if (typeof callback === "function") {
-        callback(this.getInfo());
+        if (typeof callback === "function") {
+          callback(this.getInfo());
+        }
       }
       return this;
     };
 
     Lockstep.prototype.reset = function(callback, count) {
+      var key, val;
       if (callback == null) {
         callback = this.settings.reset;
       }
-      this.count.reset++;
-      this.time.start = new Date().getTime();
-      this.time.stop = null;
-      this.time.elapsed = 0;
-      if (count) {
-        this.count.start = 0;
-        this.count.stop = 0;
-        this.count.reset = 0;
-      }
-      if (typeof callback === "function") {
-        callback(this.getInfo());
+      if (this.time.elapsed > 0) {
+        this.count.reset++;
+        this.time.start = new Date().getTime();
+        this.time.stop = null;
+        this.time.elapsed = 0;
+        if ((function() {
+          var _ref, _results;
+          _ref = this.time;
+          _results = [];
+          for (key in _ref) {
+            val = _ref[key];
+            _results.push(count && val > 0);
+          }
+          return _results;
+        }).call(this)) {
+          this.count.start = 0;
+          this.count.stop = 0;
+          this.count.reset = 0;
+        }
+        if (typeof callback === "function") {
+          callback(this.getInfo());
+        }
       }
       return this;
     };
@@ -194,12 +228,26 @@
     };
 
     Lockstep.prototype.getInfo = function() {
-      var milliseconds;
+      var clock, elapsed, key, milliseconds, val;
       milliseconds = this.running ? this.time.elapsed + new Date().getTime() - this.time.start : this.time.elapsed;
+      elapsed = this._millisecondsToElapsedTime(milliseconds);
+      clock = this._millisecondsToClockTime(milliseconds);
+      if (this.settings.floor) {
+        for (key in elapsed) {
+          val = elapsed[key];
+          elapsed = Math.floor(val);
+        }
+      }
+      if (this.settings.pad) {
+        for (key in clock) {
+          val = clock[key];
+          val = this._pad(val, this.settings.pad);
+        }
+      }
       return {
         time: {
-          elapsed: this._millisecondsToElapsedTime(milliseconds),
-          clock: this._millisecondsToClockTime(milliseconds)
+          elapsed: elapsed,
+          clock: clock
         },
         count: this.count
       };

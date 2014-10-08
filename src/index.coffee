@@ -7,14 +7,21 @@ MSQTY.minutes = MSQTY.seconds * 60
 MSQTY.hours = MSQTY.minutes * 60
 MSQTY.days = MSQTY.hours * 24
 
+noop = ->
+
 
 
 # utilities
 
 # determine variable type
 #   see: http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
-type = (variable) ->
-  ({}).toString.call(variable).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+type = (value) ->
+  ({}).toString.call(value).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+
+# determine if a variable is an integer
+#   see: http://stackoverflow.com/a/14794066/167911
+isInt = (value) ->
+  not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
 
 # shallow object merge
 #   see: http://stackoverflow.com/a/171256/167911
@@ -46,14 +53,15 @@ class Lockstep
 
   #
   _checkArguments: (args) ->
+    # check basic arguments
     if args.length is 0 # no arguments
       throw new Error('No arguments supplied.')
     else if args.length is 1
       if type(args[0]) is 'function' # 'step' callback only
-        return { step: args[0] }
+        options = { step: args[0] }
       else if type(args[0]) is 'object' # options object only
         if type(args[0].step) is 'function' # options object contains 'step' function
-          return args[0]
+          options = args[0]
         else # no 'step' function
           throw new Error('Bad arguments supplied (no valid "step" function).')
       else # bad arguments
@@ -64,9 +72,14 @@ class Lockstep
           throw new Error('Bad arguments supplied (redundant "step" function).')
         else
           args[0].step = args[1]
-          return args[0]
+          options = args[0]
       else # bad arguments
         throw new Error('Bad arguments supplied (wrong type).')
+    # check remaining options
+    if options.pad?
+      if not (options.pad is false or isInt(options.pad)) # "pad" option
+        throw new Error('Bad arguments supplied ("pad" option must have a false or integer value).')
+    options
 
   #
   _buildSettings: (options) ->
@@ -112,13 +125,21 @@ class Lockstep
     @settings.step(@getInfo())
 
   #
+  _pad: (int, length) ->
+    int += '' # cast to string
+    if int.length >= length # if the string is already long enough
+      int
+    else
+      "#{new Array(length - int.length + 1).join('0')}int"
+
+  #
   start: (callback = @settings.start) ->
     if not @running
       @time.start = new Date().getTime() # set start timestamp
       @count.start++
       @running = true
       @_loop()
-    callback?(@getInfo()) # TODO: ensure that info is time accurate
+      callback?(@getInfo()) # TODO: ensure that info is time-accurate
     this
 
   #
@@ -130,20 +151,21 @@ class Lockstep
       @count.stop++
       @running = false
       @_step() # final step
-    callback?(@getInfo()) # TODO: ensure that info is time accurate
+      callback?(@getInfo()) # TODO: ensure that info is time-accurate
     this
 
   #
   reset: (callback = @settings.reset, count) ->
-    @count.reset++
-    @time.start = new Date().getTime() # set start timestamp
-    @time.stop = null
-    @time.elapsed = 0
-    if count
-      @count.start = 0
-      @count.stop = 0
-      @count.reset = 0
-    callback?(@getInfo()) # TODO: ensure that info is time accurate
+    if @time.elapsed > 0 # if there's elapsed time to reset
+      @count.reset++
+      @time.start = new Date().getTime() # set start timestamp
+      @time.stop = null
+      @time.elapsed = 0
+      if count and val > 0 for key, val of @time # if there are counts to reset
+        @count.start = 0
+        @count.stop = 0
+        @count.reset = 0
+      callback?(@getInfo()) # TODO: ensure that info is time-accurate
     this
 
   #
@@ -160,10 +182,15 @@ class Lockstep
         @time.elapsed + new Date().getTime() - @time.start
       else # timer is stopped, or has never run
         @time.elapsed
+    elapsed = @_millisecondsToElapsedTime(milliseconds)
+    clock = @_millisecondsToClockTime(milliseconds)
+    if @settings.floor then elapsed = Math.floor(val) for key, val of elapsed
+    if @settings.pad then val = @_pad(val, @settings.pad) for key, val of clock
     {
-      time:
-        elapsed: @_millisecondsToElapsedTime(milliseconds)
-        clock: @_millisecondsToClockTime(milliseconds)
+      time: {
+        elapsed
+        clock
+      }
       count: @count
     }
 

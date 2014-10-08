@@ -5,14 +5,13 @@ gulpIf =      require 'gulp-if'
 rename =      require 'gulp-rename'
 notify =      require 'gulp-notify'
 uglify =      require 'gulp-uglify'
+less =        require 'gulp-less'
 jade =        require 'gulp-jade'
 browserSync = require 'browser-sync'
 del =         require 'del'
 runSequence = require 'run-sequence'
 streamQueue = require 'streamqueue'
 yargs =       require 'yargs'
-mocha =       require 'mocha' # TODO: use
-chai =        require 'chai' # TODO: use
 
 
 
@@ -55,6 +54,15 @@ gulp.task 'scripts', ->
     .pipe gulpIf DEV, browserSync.reload
       stream: true
 
+# compile LESS
+gulp.task 'styles', ->
+  gulp
+    .src "#{paths.src}index.less"
+    .pipe less()
+    .pipe gulp.dest paths.dist
+    .pipe gulpIf DEV, browserSync.reload
+      stream: true
+
 # copy HTML
 gulp.task 'html', ->
   gulp
@@ -68,9 +76,10 @@ gulp.task 'html', ->
 gulp.task 'watch', ->
   gulp.watch "#{paths.src}*.coffee", ['scripts']
   gulp.watch "#{paths.src}*.jade", ['html']
+  gulp.watch "#{paths.src}*.less", ['styles']
 
 # default task: call with 'gulp' on command line
 gulp.task 'default', ->
-  runSequence 'clean', 'html', 'scripts', ->
+  runSequence 'clean', 'html', 'scripts', 'styles', ->
     if DEV
       runSequence 'watch', 'browser-sync'

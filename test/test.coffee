@@ -1,13 +1,8 @@
-# dependencies
-
-chai =     require('chai')
-Lockstep = require('../dist/lockstep')
-
-
-
 # shortcuts
 
 expect = chai.expect
+spy = sinon.spy()
+stub = sinon.stub()
 
 
 
@@ -186,6 +181,13 @@ describe 'Lockstep', ->
 
 
 
+  describe '#_pad()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_pad')
+
+
+
   describe '#start()', ->
 
     it 'should be callable', ->
@@ -247,16 +249,6 @@ describe 'Lockstep', ->
       lockstep = new Lockstep(noop)
       lockstep.start().reset()
       expect(lockstep.count.stop).to.equal(0)
-
-    it 'should stop running if true is passed', ->
-      lockstep = new Lockstep(noop)
-      lockstep.start().reset(true)
-      expect(lockstep.running).to.equal(false)
-
-    it 'should increment stop counter if true is passed', ->
-      lockstep = new Lockstep(noop)
-      lockstep.start().reset(true)
-      expect(lockstep.count.stop).to.equal(1)
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)

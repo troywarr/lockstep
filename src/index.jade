@@ -8,61 +8,66 @@ html(lang="en")
     title Lockstep.js
     meta(name="description", content="A JavaScript library to create accurate timers.")
     meta(name="viewport", content="width=device-width, initial-scale=1")
+    link(rel="stylesheet", href="index.css")
 
   body
 
-    h2 Clock
-    table.clock
-      tr.milliseconds
-        th Milliseconds
-        td 0
-      tr.seconds
-        th Seconds
-        td 0
-      tr.minutes
-        th Minutes
-        td 0
-      tr.hours
-        th Hours
-        td 0
-      tr.days
-        th Days
-        td 0
+    section
+      h2 Clock
+      table.clock
+        tr.milliseconds
+          th Milliseconds
+          td 0
+        tr.seconds
+          th Seconds
+          td 0
+        tr.minutes
+          th Minutes
+          td 0
+        tr.hours
+          th Hours
+          td 0
+        tr.days
+          th Days
+          td 0
 
-    h2 Elapsed
-    table.elapsed
-      tr.milliseconds
-        th Milliseconds
-        td 0
-      tr.seconds
-        th Seconds
-        td 0
-      tr.minutes
-        th Minutes
-        td 0
-      tr.hours
-        th Hours
-        td 0
-      tr.days
-        th Days
-        td 0
+    section
+      h2 Elapsed
+      table.elapsed
+        tr.milliseconds
+          th Milliseconds
+          td 0
+        tr.seconds
+          th Seconds
+          td 0
+        tr.minutes
+          th Minutes
+          td 0
+        tr.hours
+          th Hours
+          td 0
+        tr.days
+          th Days
+          td 0
 
-    h2 Count
-    table.count
-      tr.start
-        th Start
-        td 0
-      tr.stop
-        th Stop
-        td 0
-      tr.reset
-        th Reset
-        td 0
+    section
+      h2 Count
+      table.count
+        tr.start
+          th Start
+          td 0
+        tr.stop
+          th Stop
+          td 0
+        tr.reset
+          th Reset
+          td 0
 
-    button.start Start
-    button.stop Stop
-    button.reset Reset
-    button.resetCount Reset with Count
+    section
+      button.start Start
+      button.stop Stop
+      button.reset Reset
+      button.resetCount Reset with Count
 
     script(src="lockstep.js")
     script(src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js")
