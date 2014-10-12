@@ -1,6 +1,6 @@
 {
   "name": "lockstep",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A JavaScript library to create accurate timers.",
   "main": "./dist/lockstep.js",
   "dependencies": {
