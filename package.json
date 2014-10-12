@@ -48,7 +48,7 @@
   },
   "directories": {
     "lib": "./dist"
-  }
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/troywarr/lockstep/issues"
