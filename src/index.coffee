@@ -16,28 +16,6 @@ NOOP = ->
 
 
 
-# utilities
-
-# determine variable type
-#   see: http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
-type = (value) ->
-  ({}).toString.call(value).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
-
-# determine if a variable is an integer
-#   see: http://stackoverflow.com/a/14794066/167911
-isInt = (value) ->
-  not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
-
-# shallow object merge
-#   see: http://stackoverflow.com/a/171256/167911
-merge = (obj1, obj2) ->
-  obj3 = {}
-  obj3[name] = obj1[name] for name of obj1
-  obj3[name] = obj2[name] for name of obj2
-  obj3
-
-
-
 # library
 
 class Lockstep
@@ -57,6 +35,24 @@ class Lockstep
       stop: null # latest timestamp when the timer was stopped
       elapsed: 0 # total milliseconds that timer has run (not including time since last animation frame)
 
+  # determine variable type
+  #   see: http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
+  _type = (value) ->
+    ({}).toString.call(value).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+
+  # determine if a variable is an integer
+  #   see: http://stackoverflow.com/a/14794066/167911
+  _isInt = (value) ->
+    not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
+
+  # shallow object merge
+  #   see: http://stackoverflow.com/a/171256/167911
+  _merge = (obj1, obj2) ->
+    obj3 = {}
+    obj3[name] = obj1[name] for name of obj1
+    obj3[name] = obj2[name] for name of obj2
+    obj3
+
   #
   _hasHighResolutionTime: ->
     window?.performance?.now? or process?.hrtime?
@@ -67,17 +63,17 @@ class Lockstep
     if args.length is 0 # no arguments
       throw new Error('No arguments supplied.')
     else if args.length is 1
-      if type(args[0]) is 'function' # 'step' callback only
+      if @_type(args[0]) is 'function' # 'step' callback only
         options = { step: args[0] }
-      else if type(args[0]) is 'object' # options object only
-        if type(args[0].step) is 'function' # options object contains 'step' function
+      else if @_type(args[0]) is 'object' # options object only
+        if @_type(args[0].step) is 'function' # options object contains 'step' function
           options = args[0]
         else # no 'step' function
           throw new Error('Bad arguments supplied (no valid "step" function).')
       else # bad arguments
         throw new Error('Bad arguments supplied (wrong type).')
     else if args.length >= 2
-      if type(args[0]) is 'object' and type(args[1]) is 'function' # options object & 'step' callback
+      if @_type(args[0]) is 'object' and @_type(args[1]) is 'function' # options object & 'step' callback
         if args[0].step?
           throw new Error('Bad arguments supplied (redundant "step" function).')
         else
@@ -87,7 +83,7 @@ class Lockstep
         throw new Error('Bad arguments supplied (wrong type).')
     # check remaining options
     if options.pad?
-      if not (options.pad is false or isInt(options.pad)) # "pad" option
+      if not (options.pad is false or @_isInt(options.pad)) # "pad" option
         throw new Error('Bad arguments supplied ("pad" option must have a false or integer value).')
     options
 
@@ -97,7 +93,7 @@ class Lockstep
       # elapsed: +new Date # integer; milliseconds at which to start elapsed time
       pad: false # integer (or false); pads clock time to a number of places
       floor: false # boolean; removes decimal (via Math.floor) from elapsed time
-    merge(defaults, options)
+    @_merge(defaults, options)
 
   #
   _millisecondsToClockTime: (ms) ->
@@ -111,7 +107,7 @@ class Lockstep
       minutes: Math.floor(ms / MSQTY.minutes) % 60
       hours: Math.floor(ms / MSQTY.hours) % 24
       days: Math.floor(ms / MSQTY.days)
-    merge(clockTime, clockTimeMicroseconds ? {})
+    @_merge(clockTime, clockTimeMicroseconds ? {})
 
   #
   _millisecondsToElapsedTime: (ms) ->
@@ -124,7 +120,7 @@ class Lockstep
       minutes: ms / MSQTY.minutes
       hours: ms / MSQTY.hours
       days: ms / MSQTY.days
-    merge(clockTime, clockTimeMicroseconds ? {})
+    @_merge(clockTime, clockTimeMicroseconds ? {})
 
   #
   _elapsedTimeToMilliseconds: (elapsedTime) ->
