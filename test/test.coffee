@@ -11,6 +11,7 @@ stub = sinon.stub()
 noop = ->
 
 elapsedTime =
+  microseconds: 123456789000
   milliseconds: 123456789
   seconds: 123456.789
   minutes: 2057.61315
@@ -18,6 +19,7 @@ elapsedTime =
   days: 1.4288980208333333
 
 clockTime =
+  microseconds: 0
   milliseconds: 789
   seconds: 36
   minutes: 17
@@ -37,6 +39,41 @@ describe 'Lockstep', ->
     it 'should initialize with timer not running', ->
       lockstep = new Lockstep(noop)
       expect(lockstep.running).to.equal(false)
+
+
+
+  describe '#_type()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_type')
+
+
+
+  describe '#_isInt()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_isInt')
+
+
+
+  describe '#_merge()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_merge')
+
+
+
+  describe '#_pad()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_pad')
+
+
+
+  describe '#_hasHighResolutionTime()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_hasHighResolutionTime')
 
 
 
@@ -107,63 +144,108 @@ describe 'Lockstep', ->
 
 
 
-  describe '#_millisecondsToClockTime()', ->
+  describe '#_runTimeToClockTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_millisecondsToClockTime')
+      expect(Lockstep).to.respondTo('_runTimeToClockTime')
 
     it 'should return an object', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._millisecondsToClockTime(123456789)).to.be.an('object')
+      expect(lockstep._runTimeToClockTime(123456789)).to.be.an('object')
 
     it 'should return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._millisecondsToClockTime(123456789)).to.deep.equal(clockTime)
+      expect(lockstep._runTimeToClockTime(123456789)).to.deep.equal(clockTime)
 
 
 
-  describe '#_millisecondsToElapsedTime()', ->
+  describe '#_runTimeToElapsedTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_millisecondsToElapsedTime')
+      expect(Lockstep).to.respondTo('_runTimeToElapsedTime')
 
     it 'should return an object', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._millisecondsToElapsedTime(123456789)).to.be.an('object')
+      expect(lockstep._runTimeToElapsedTime(123456789)).to.be.an('object')
 
     it 'should return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._millisecondsToElapsedTime(123456789)).to.deep.equal(elapsedTime)
+      expect(lockstep._runTimeToElapsedTime(123456789)).to.deep.equal(elapsedTime)
 
 
 
-  describe '#_elapsedTimeToMilliseconds()', ->
+  # describe '#_elapsedTimeToMilliseconds()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('_elapsedTimeToMilliseconds')
+  #
+  #   it 'should return a number', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep._elapsedTimeToMilliseconds(elapsedTime)).to.be.a('number')
+  #
+  #   it 'should return a specific value', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep._elapsedTimeToMilliseconds(elapsedTime)).to.equal(123456789)
+  #
+  #
+  #
+  # describe '#_clockTimeToMilliseconds()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('_clockTimeToMilliseconds')
+  #
+  #   it 'should return a number', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep._clockTimeToMilliseconds(clockTime)).to.be.a('number')
+  #
+  #   it 'should return a specific value', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep._clockTimeToMilliseconds(clockTime)).to.equal(123456789)
+
+
+
+  describe '#_getInfo()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_elapsedTimeToMilliseconds')
+      expect(Lockstep).to.respondTo('_getInfo')
 
-    it 'should return a number', ->
+    it 'should return an object', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._elapsedTimeToMilliseconds(elapsedTime)).to.be.a('number')
+      expect(lockstep._getInfo()).to.be.an('object')
 
-    it 'should return a specific value', ->
+    it 'should initially return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._elapsedTimeToMilliseconds(elapsedTime)).to.equal(123456789)
+      expect(lockstep._getInfo()).to.deep.equal
+        time:
+          elapsed:
+            microseconds: 0
+            milliseconds: 0
+            seconds: 0
+            minutes: 0
+            hours: 0
+            days: 0
+          clock:
+            microseconds: 0
+            milliseconds: 0
+            seconds: 0
+            minutes: 0
+            hours: 0
+            days: 0
+        count:
+          start: 0
+          stop: 0
+          reset: 0
 
 
 
-  describe '#_clockTimeToMilliseconds()', ->
+  describe '#_setInfo()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_clockTimeToMilliseconds')
+      expect(Lockstep).to.respondTo('_setInfo')
 
-    it 'should return a number', ->
+    it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._clockTimeToMilliseconds(clockTime)).to.be.a('number')
-
-    it 'should return a specific value', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep._clockTimeToMilliseconds(clockTime)).to.equal(123456789)
+      expect(lockstep._setInfo()).to.equal(lockstep)
 
 
 
@@ -181,10 +263,26 @@ describe 'Lockstep', ->
 
 
 
-  describe '#_pad()', ->
+  describe '#info()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_pad')
+      expect(Lockstep).to.respondTo('info')
+
+    it 'should not throw if no arguments are supplied', ->
+      expect(->
+        lockstep = new Lockstep(noop)
+        lockstep.info()
+      ).to.not.throw()
+
+    it 'should throw if the single argument supplied is not an object', ->
+      expect(->
+        lockstep = new Lockstep(noop)
+        lockstep.info('foo')
+      ).to.throw('Bad arguments supplied (wrong type).')
+
+    # with no arguments, should call ._getInfo()
+
+    # with one argument (an object), should call ._setInfo()
 
 
 
@@ -235,10 +333,10 @@ describe 'Lockstep', ->
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('reset')
 
-    it 'should increment reset counter', ->
-      lockstep = new Lockstep(noop)
-      lockstep.start().reset()
-      expect(lockstep.count.reset).to.equal(1)
+    # it 'should increment reset counter', ->
+    #   lockstep = new Lockstep(noop)
+    #   lockstep.start().reset()
+    #   expect(lockstep.count.reset).to.equal(1)
 
     it 'should still be running if no arguments are passed', ->
       lockstep = new Lockstep(noop)
@@ -254,133 +352,104 @@ describe 'Lockstep', ->
       lockstep = new Lockstep(noop)
       expect(lockstep.reset()).to.equal(lockstep)
 
+    # should reset all counters if the second argument is truthy
 
+    # should not reset any counters if the second argument is falsy
 
-  describe '#add()', ->
+    # should run callback if elapsed time is greater than zero
 
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('add')
+    # should not run callback if elapsed time is zero
 
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.add()).to.equal(lockstep)
-
-
-
-  describe '#subtract()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('subtract')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.subtract()).to.equal(lockstep)
+    # should run callback after resetting counters
 
 
 
-  describe '#getInfo()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('getInfo')
-
-    it 'should return an object', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.getInfo()).to.be.an('object')
-
-    # it 'should initially return specific properties and values', ->
-    #   lockstep = new Lockstep(noop)
-    #   expect(lockstep.getInfo()).to.deep.equal
-    #     time:
-    #       elapsed:
-    #         milliseconds: 0
-    #         seconds: 0
-    #         minutes: 0
-    #         hours: 0
-    #         days: 0
-    #       clock:
-    #         milliseconds: 0
-    #         seconds: 0
-    #         minutes: 0
-    #         hours: 0
-    #         days: 0
-    #     count:
-    #       start: 0
-    #       stop: 0
-    #       reset: 0
-
-
-
-  describe '#setElapsedTime()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('setElapsedTime')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.setElapsedTime()).to.equal(lockstep)
-
-
-
-  describe '#when()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('when')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.when()).to.equal(lockstep)
-
-
-
-  describe '#every()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('every')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.every()).to.equal(lockstep)
-
-
-
-  describe '#while()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('while')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.while()).to.equal(lockstep)
-
-
-
-  describe '#during()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('during')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.during()).to.equal(lockstep)
-
-
-
-  describe '#beginning()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('beginning')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.beginning()).to.equal(lockstep)
-
-
-
-  describe '#ending()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('ending')
-
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.ending()).to.equal(lockstep)
+  # describe '#add()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('add')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.add()).to.equal(lockstep)
+  #
+  #   # should add the appropriate time
+  #
+  #
+  #
+  # describe '#subtract()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('subtract')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.subtract()).to.equal(lockstep)
+  #
+  #   # should subtract the appropriate time
+  #
+  #
+  #
+  # describe '#when()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('when')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.when()).to.equal(lockstep)
+  #
+  #
+  #
+  # describe '#every()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('every')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.every()).to.equal(lockstep)
+  #
+  #
+  #
+  # describe '#while()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('while')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.while()).to.equal(lockstep)
+  #
+  #
+  #
+  # describe '#during()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('during')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.during()).to.equal(lockstep)
+  #
+  #
+  #
+  # describe '#beginning()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('beginning')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.beginning()).to.equal(lockstep)
+  #
+  #
+  #
+  # describe '#ending()', ->
+  #
+  #   it 'should be callable', ->
+  #     expect(Lockstep).to.respondTo('ending')
+  #
+  #   it 'should return the context object for chainability', ->
+  #     lockstep = new Lockstep(noop)
+  #     expect(lockstep.ending()).to.equal(lockstep)

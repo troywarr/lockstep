@@ -2,12 +2,13 @@ raf = require('raf')
 now = require('performance-now')
 
 
+
 # constants
 
 MSQTY = {}
 MSQTY.microseconds = 0.001
-MSQTY.milliseconds = 1
-MSQTY.seconds = 1000
+MSQTY.milliseconds = MSQTY.microseconds * 1000 # 1 (not really useful)
+MSQTY.seconds = MSQTY.milliseconds * 1000
 MSQTY.minutes = MSQTY.seconds * 60
 MSQTY.hours = MSQTY.minutes * 60
 MSQTY.days = MSQTY.hours * 24
@@ -33,7 +34,7 @@ class Lockstep
     @time =
       start: null # latest timestamp when the timer was started
       stop: null # latest timestamp when the timer was stopped
-      elapsed: 0 # total milliseconds that timer has run (not including time since last animation frame)
+      run: 0 # length that timer has run
 
   # determine variable type
   #   see: http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
@@ -52,6 +53,14 @@ class Lockstep
     obj3[name] = obj1[name] for name of obj1
     obj3[name] = obj2[name] for name of obj2
     obj3
+
+  # pad integer with zeroes
+  _pad: (int, length) ->
+    int += '' # cast to string, if needed
+    if int.length >= length # if the string is already long enough
+      int
+    else
+      "#{new Array(length - int.length + 1).join('0')}int"
 
   #
   _hasHighResolutionTime: ->
@@ -90,117 +99,58 @@ class Lockstep
   #
   _buildSettings: (options) ->
     defaults =
-      # elapsed: +new Date # integer; milliseconds at which to start elapsed time
-      pad: false # integer (or false); pads clock time to a number of places
-      floor: false # boolean; removes decimal (via Math.floor) from elapsed time
+      pad: false # integer (or false); pads clock time output to a number of places (and results in a string)
+      floor: false # boolean; removes decimal (via Math.floor) from elapsed time output
     @_merge(defaults, options)
 
   #
-  _millisecondsToClockTime: (ms) ->
+  _runTimeToClockTime: (runTime) ->
+    clockTime = {}
     if @microseconds
-      clockTimeMicroseconds =
-        microseconds: Math.floor((ms % 1) / MSQTY.microseconds)
-      ms = Math.floor(ms)
-    clockTime =
-      milliseconds: ms % 1000
-      seconds: Math.floor(ms / MSQTY.seconds) % 60
-      minutes: Math.floor(ms / MSQTY.minutes) % 60
-      hours: Math.floor(ms / MSQTY.hours) % 24
-      days: Math.floor(ms / MSQTY.days)
-    @_merge(clockTime, clockTimeMicroseconds ? {})
-
-  #
-  _millisecondsToElapsedTime: (ms) ->
-    if @microseconds
-      clockTimeMicroseconds =
-        microseconds: ms / MSQTY.microseconds
-    clockTime =
-      milliseconds: ms
-      seconds: ms / MSQTY.seconds
-      minutes: ms / MSQTY.minutes
-      hours: ms / MSQTY.hours
-      days: ms / MSQTY.days
-    @_merge(clockTime, clockTimeMicroseconds ? {})
-
-  #
-  _elapsedTimeToMilliseconds: (elapsedTime) ->
-    elapsedTime.milliseconds
-
-  #
-  _clockTimeToMilliseconds: (clockTime) ->
-    ms = 0
-    ms += val * MSQTY[key] for key, val of clockTime
-    ms
-
-  #
-  _loop: =>
-    @pulse = raf(@_loop) # request next frame
-    @_step()
-
-  #
-  _step: ->
-    @settings.step(@getInfo())
-
-  #
-  _pad: (int, length) ->
-    int += '' # cast to string
-    if int.length >= length # if the string is already long enough
-      int
+      clockTime.microseconds = Math.floor((runTime % 1) / MSQTY.microseconds)
+      milliseconds = Math.floor(runTime)
     else
-      "#{new Array(length - int.length + 1).join('0')}int"
+      milliseconds = runTime
+    clockTime.milliseconds = milliseconds % 1000
+    clockTime.seconds = Math.floor(milliseconds / MSQTY.seconds) % 60
+    clockTime.minutes = Math.floor(milliseconds / MSQTY.minutes) % 60
+    clockTime.hours = Math.floor(milliseconds / MSQTY.hours) % 24
+    clockTime.days = Math.floor(milliseconds / MSQTY.days)
+    clockTime
 
   #
-  start: (callback = @settings.start) ->
-    if not @running
-      @time.start = performance.now() # set start timestamp
-      @count.start++
-      @running = true
-      @_loop()
-      callback?(@getInfo()) # TODO: ensure that info is time-accurate
-    this
+  _runTimeToElapsedTime: (runTime) ->
+    elapsedTime = {}
+    if @microseconds
+      elapsedTime.microseconds = runTime / MSQTY.microseconds
+      milliseconds = runTime
+    else
+      milliseconds = runTime
+    elapsedTime.milliseconds = milliseconds
+    elapsedTime.seconds = milliseconds / MSQTY.seconds
+    elapsedTime.minutes = milliseconds / MSQTY.minutes
+    elapsedTime.hours = milliseconds / MSQTY.hours
+    elapsedTime.days = milliseconds / MSQTY.days
+    elapsedTime
+
+  # #
+  # _elapsedTimeToMilliseconds: (elapsedTime) ->
+  #   elapsedTime.milliseconds
+  #
+  # #
+  # _clockTimeToMilliseconds: (clockTime) ->
+  #   ms = 0
+  #   ms += val * MSQTY[key] for key, val of clockTime
+  #   ms
 
   #
-  stop: (callback = @settings.stop) ->
-    if @running
-      raf.cancel(@pulse)
-      @time.stop = performance.now() # set stop timestamp
-      @time.elapsed += @time.stop - @time.start # add elapsed time
-      @count.stop++
-      @running = false
-      @_step() # final step
-      callback?(@getInfo()) # TODO: ensure that info is time-accurate
-    this
-
-  #
-  reset: (callback = @settings.reset, count) ->
-    if @time.elapsed > 0 # if there's elapsed time to reset
-      @count.reset++
-      @time.start = performance.now() # set start timestamp
-      @time.stop = null
-      @time.elapsed = 0
-      if count and val > 0 for key, val of @time # if there are counts to reset
-        @count.start = 0
-        @count.stop = 0
-        @count.reset = 0
-      callback?(@getInfo()) # TODO: ensure that info is time-accurate
-    this
-
-  #
-  add: (milliseconds) ->
-    this
-
-  #
-  subtract: (milliseconds) ->
-    this
-
-  #
-  getInfo: ->
-    milliseconds = if @running # timer is currently running
-        @time.elapsed + performance.now() - @time.start
-      else # timer is stopped, or has never run
-        @time.elapsed
-    elapsed = @_millisecondsToElapsedTime(milliseconds)
-    clock = @_millisecondsToClockTime(milliseconds)
+  _getInfo: ->
+    runTime = if @running # timer is currently running
+      @time.run + now() - @time.start
+    else # timer is stopped, or has never run
+      @time.run
+    elapsed = @_runTimeToElapsedTime(runTime)
+    clock = @_runTimeToClockTime(runTime)
     if @settings.floor then elapsed = Math.floor(val) for key, val of elapsed
     if @settings.pad then val = @_pad(val, @settings.pad) for key, val of clock
     {
@@ -212,38 +162,110 @@ class Lockstep
     }
 
   #
-  setInfo: (info) ->
-    this
-
-  # call callback at a specific time
-  when: (time, callback) ->
-    this
-
-  # call callback at a specified time interval
-  # TODO: use @when()
-  every: (time, callback) ->
-    this
-
-  # call callback on each step through a specified time period
-  # TODO: use @when()
-  while: (startTime, endTime, callback) ->
-    this
-
-  # call callback at the beginning of a specified time period, and another callback at the end
-  # TODO: use @when()
-  during: (startTime, endTime, startCallback, endCallback) ->
+  _setInfo: (info) ->
     this
 
   #
-  # TODO: use @during() with an infinity endTime
-  beginning: (startTime, startCallback) ->
-    @during(startTime, Infinity, startCallback, NOOP)
+  _loop: =>
+    @pulse = raf(@_loop) # request next frame
+    @_step()
+
+  #
+  _step: ->
+    @settings.step(@_getInfo())
+
+  #
+  info: (info) ->
+    if info?
+      if @_type(info) is 'object' # setter
+        @_setInfo(info)
+      else
+        throw new Error('Bad arguments supplied (wrong type).')
+    else # getter
+      @_getInfo()
+
+  #
+  start: (callback = @settings.start) ->
+    if not @running
+      @count.start++
+      @running = true
+      @time.start = now() # set start timestamp
+      @_loop()
+      callback?(@_getInfo()) # TODO: ensure that info is time-accurate
     this
 
   #
-  # TODO: use @during() with a zero startTime
-  ending: (endTime, endCallback) ->
+  stop: (callback = @settings.stop) ->
+    if @running
+      raf.cancel(@pulse)
+      @time.stop = now() # set stop timestamp
+      @time.run += @time.stop - @time.start # add run time
+      @count.stop++
+      @running = false
+      @_step() # final step
+      callback?(@_getInfo()) # TODO: ensure that info is time-accurate
     this
+
+  #
+  reset: (callback = @settings.reset, count) ->
+    if @time.run > 0
+      callbackEligible = true
+      @time.run = 0
+      @count.reset++
+      @time.start = now() # set start timestamp
+      @time.stop = null
+    if count # then if any counts are greater than 0, reset all
+      for key, val of @count
+        if val > 0
+          callbackEligible = true
+          @count.start = 0
+          @count.stop = 0
+          @count.reset = 0
+          break
+    if callback? and callbackEligible
+      if @_type(callback) is 'function'
+        callback?(@_getInfo()) # TODO: ensure that info is time-accurate
+      else
+        throw new Error('Bad arguments supplied (wrong type).')
+    this
+
+  # #
+  # add: (milliseconds) ->
+  #   this
+  #
+  # #
+  # subtract: (milliseconds) ->
+  #   this
+  #
+  # # run callback at a specific time
+  # when: (time, callback) ->
+  #   this
+  #
+  # # run callback at a specified time interval
+  # # TODO: use @when()
+  # every: (time, callback) ->
+  #   this
+  #
+  # # run callback on each step through a specified time period
+  # # TODO: use @when()
+  # while: (startTime, endTime, callback) ->
+  #   this
+  #
+  # # run callback at the beginning of a specified time period, and another callback at the end
+  # # TODO: use @when()
+  # during: (startTime, endTime, startCallback, endCallback) ->
+  #   this
+  #
+  # #
+  # # TODO: use @during() with an infinity endTime
+  # beginning: (startTime, startCallback) ->
+  #   @during(startTime, Infinity, startCallback, NOOP)
+  #   this
+  #
+  # #
+  # # TODO: use @during() with a zero startTime
+  # ending: (endTime, endCallback) ->
+  #   this
 
 
 
