@@ -34,7 +34,7 @@ merge = (obj1, obj2) ->
 
 
 
-# shims & fallbacks
+# shims/polyfills
 
 # use High-Resolution Time API, if available
 #   see: http://www.sitepoint.com/discovering-the-high-resolution-time-api/
@@ -46,7 +46,8 @@ performance.now = do ->
   performance.msNow ?
   performance.oNow ?
   performance.webkitNow ?
-  microseconds = false or -> Date.now() # set flag to false and fall back to Date.now()
+  microseconds = false or ->
+    Date.now?() ? new Date().getTime() # set flag to false and fall back to Date object
 
 
 
@@ -223,7 +224,7 @@ class Lockstep
     }
 
   #
-  setElapsedTime: (elapsedTime) ->
+  setInfo: (info) ->
     this
 
   # call callback at a specific time

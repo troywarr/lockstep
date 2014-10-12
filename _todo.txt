@@ -6,3 +6,6 @@ add 'action' options property for a callback to be run on ._step(), .start(), .s
 add declarative style (e.g., add data-clock-milliseconds or something to set up automatic clock time output)
 add shim for Date.now() (see: https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Date/now)
 add shim for requestAnimationFrame (see: http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/)
+use .toFixed (see: http://stackoverflow.com/questions/4512306/get-decimal-portion-of-a-number-with-javascript#comment37449439_4512317)
+use performance-now (see: https://www.npmjs.org/package/performance-now)
+use raf (see: https://github.com/chrisdickinson/raf)

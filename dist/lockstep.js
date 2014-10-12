@@ -45,7 +45,8 @@
   performance.now = (function() {
     var _ref1, _ref2, _ref3, _ref4, _ref5;
     return (_ref1 = (_ref2 = (_ref3 = (_ref4 = (_ref5 = performance.now) != null ? _ref5 : performance.mozNow) != null ? _ref4 : performance.msNow) != null ? _ref3 : performance.oNow) != null ? _ref2 : performance.webkitNow) != null ? _ref1 : microseconds = false || function() {
-      return Date.now();
+      var _ref6;
+      return (_ref6 = typeof Date.now === "function" ? Date.now() : void 0) != null ? _ref6 : new Date().getTime();
     };
   })();
 
@@ -281,7 +282,7 @@
       };
     };
 
-    Lockstep.prototype.setElapsedTime = function(elapsedTime) {
+    Lockstep.prototype.setInfo = function(info) {
       return this;
     };
 
