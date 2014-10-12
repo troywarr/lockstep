@@ -37,17 +37,17 @@ class Lockstep
 
   # determine variable type
   #   see: http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
-  _type = (value) ->
+  _type: (value) ->
     ({}).toString.call(value).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
 
   # determine if a variable is an integer
   #   see: http://stackoverflow.com/a/14794066/167911
-  _isInt = (value) ->
+  _isInt: (value) ->
     not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
 
   # shallow object merge
   #   see: http://stackoverflow.com/a/171256/167911
-  _merge = (obj1, obj2) ->
+  _merge: (obj1, obj2) ->
     obj3 = {}
     obj3[name] = obj1[name] for name of obj1
     obj3[name] = obj2[name] for name of obj2
