@@ -4,6 +4,7 @@
   "description": "A JavaScript library to create accurate timers.",
   "main": "lockstep.js",
   "dependencies": {
+    "performance-now": "^0.2.0",
     "raf": "^2.0.4"
   },
   "devDependencies": {

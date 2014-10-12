@@ -1,5 +1,5 @@
 raf = require('raf')
-
+now = require('performance-now')
 
 
 # constants
@@ -12,7 +12,7 @@ MSQTY.minutes = MSQTY.seconds * 60
 MSQTY.hours = MSQTY.minutes * 60
 MSQTY.days = MSQTY.hours * 24
 
-noop = ->
+NOOP = ->
 
 
 
@@ -38,23 +38,6 @@ merge = (obj1, obj2) ->
 
 
 
-# shims/polyfills
-
-# use High-Resolution Time API, if available
-#   see: http://www.sitepoint.com/discovering-the-high-resolution-time-api/
-microseconds = true
-window.performance = window.performance ? {}
-performance.now = do ->
-  performance.now ?
-  performance.mozNow ?
-  performance.msNow ?
-  performance.oNow ?
-  performance.webkitNow ?
-  microseconds = false or ->
-    Date.now?() ? new Date().getTime() # set flag to false and fall back to Date object
-
-
-
 # library
 
 class Lockstep
@@ -64,6 +47,7 @@ class Lockstep
     options = @_checkArguments(arguments)
     @settings = @_buildSettings(options)
     @running = false
+    @microseconds = @_hasHighResolutionTime()
     @count =
       start: 0
       stop: 0
@@ -72,6 +56,10 @@ class Lockstep
       start: null # latest timestamp when the timer was started
       stop: null # latest timestamp when the timer was stopped
       elapsed: 0 # total milliseconds that timer has run (not including time since last animation frame)
+
+  #
+  _hasHighResolutionTime: ->
+    window?.performance?.now? or process?.hrtime?
 
   #
   _checkArguments: (args) ->
@@ -113,7 +101,7 @@ class Lockstep
 
   #
   _millisecondsToClockTime: (ms) ->
-    if microseconds
+    if @microseconds
       clockTimeMicroseconds =
         microseconds: Math.floor((ms % 1) / MSQTY.microseconds)
       ms = Math.floor(ms)
@@ -127,7 +115,7 @@ class Lockstep
 
   #
   _millisecondsToElapsedTime: (ms) ->
-    if microseconds
+    if @microseconds
       clockTimeMicroseconds =
         microseconds: ms / MSQTY.microseconds
     clockTime =
@@ -253,7 +241,7 @@ class Lockstep
   #
   # TODO: use @during() with an infinity endTime
   beginning: (startTime, startCallback) ->
-    @during(startTime, Infinity, startCallback, noop)
+    @during(startTime, Infinity, startCallback, NOOP)
     this
 
   #
