@@ -6,7 +6,7 @@
     "Troy Warr <troy3000@gmail.com>"
   ],
   "description": "A JavaScript library to create accurate timers.",
-  "main": "lockstep.js",
+  "main": "./dist/lockstep.js",
   "moduleType": [
     "amd",
     "globals",
@@ -20,9 +20,7 @@
   ],
   "license": "MIT",
   "ignore": [
-    "node_modules",
-    "bower_components",
-    "test"
+    "**/*.txt"
   ],
   "dependencies": {}
 }

@@ -2,7 +2,7 @@
   "name": "lockstep",
   "version": "0.1.0",
   "description": "A JavaScript library to create accurate timers.",
-  "main": "lockstep.js",
+  "main": "./dist/lockstep.js",
   "dependencies": {
     "performance-now": "^0.2.0",
     "raf": "^2.0.4"
@@ -41,7 +41,14 @@
     "clock",
     "interval"
   ],
-  "author": "Troy Warr",
+  "author": {
+    "name": "Troy Warr",
+    "email": "troy3000@gmail.com",
+    "url": "http://troywarr.info/"
+  },
+  "directories": {
+    "lib": "./dist"
+  }
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/troywarr/lockstep/issues"
