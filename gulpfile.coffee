@@ -7,6 +7,7 @@ notify =      require 'gulp-notify'
 uglify =      require 'gulp-uglify'
 less =        require 'gulp-less'
 jade =        require 'gulp-jade'
+browserify  = require 'gulp-browserify'
 browserSync = require 'browser-sync'
 del =         require 'del'
 runSequence = require 'run-sequence'
@@ -46,6 +47,9 @@ gulp.task 'scripts', ->
   gulp
     .src "#{paths.src}index.coffee"
     .pipe coffee()
+    .pipe browserify
+      standalone: 'Lockstep'
+      debug: true
     .pipe rename 'lockstep.js'
     .pipe gulp.dest paths.dist
     .pipe rename 'lockstep.min.js'

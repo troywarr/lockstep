@@ -1,3 +1,7 @@
+raf = require('raf')
+
+
+
 # constants
 
 MSQTY = {}
@@ -146,7 +150,7 @@ class Lockstep
 
   #
   _loop: =>
-    @pulse = window.requestAnimationFrame(@_loop) # request next frame
+    @pulse = raf(@_loop) # request next frame
     @_step()
 
   #
@@ -174,7 +178,7 @@ class Lockstep
   #
   stop: (callback = @settings.stop) ->
     if @running
-      window.cancelAnimationFrame(@pulse)
+      raf.cancel(@pulse)
       @time.stop = performance.now() # set stop timestamp
       @time.elapsed += @time.stop - @time.start # add elapsed time
       @count.stop++
@@ -260,11 +264,5 @@ class Lockstep
 
 
 # expose
-#   see: http://oli.me.uk/2013/07/21/exporting-through-amd-commonjs-and-the-global-object/
 
-if typeof define is 'function' and define.amd? # AMD
-  define -> Lockstep
-else if module?.exports? # CommonJS
-  module.exports = Lockstep
-else
-  @Lockstep = Lockstep # global
+module.exports = Lockstep
