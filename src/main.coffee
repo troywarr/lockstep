@@ -218,6 +218,7 @@ class Lockstep
         if info.elapsed? then @_setElapsedTime(info.elapsed)
         if info.clock? then @_setClockTime(info.clock)
         if info.count? then @_setCount(info.count)
+        callback?(@_getInfo()) # TODO: ensure that info is time-accurate
         return this
       else
         throw new Error('Bad arguments supplied (wrong type).')
