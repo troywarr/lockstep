@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Lockstep.js</title><meta name="description" content="A JavaScript library to create accurate timers."><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="index.css"></head><body><section><h2>Clock</h2><table class="clock"><tr class="microseconds"><th>Microseconds</th><td>0</td></tr><tr class="milliseconds"><th>Milliseconds</th><td>0</td></tr><tr class="seconds"><th>Seconds</th><td>0</td></tr><tr class="minutes"><th>Minutes</th><td>0</td></tr><tr class="hours"><th>Hours</th><td>0</td></tr><tr class="days"><th>Days</th><td>0</td></tr></table></section><section><h2>Elapsed</h2><table class="elapsed"><tr class="microseconds"><th>Microseconds</th><td>0</td></tr><tr class="milliseconds"><th>Milliseconds</th><td>0</td></tr><tr class="seconds"><th>Seconds</th><td>0</td></tr><tr class="minutes"><th>Minutes</th><td>0</td></tr><tr class="hours"><th>Hours</th><td>0</td></tr><tr class="days"><th>Days</th><td>0</td></tr></table></section><section><h2>Count</h2><table class="count"><tr class="start"><th>Start</th><td>0</td></tr><tr class="stop"><th>Stop</th><td>0</td></tr><tr class="reset"><th>Reset</th><td>0</td></tr></table></section><section><button class="start">Start</button><button class="stop">Stop</button><button class="reset">Reset</button><button class="resetCount">Reset with Count</button></section><script src="lockstep.js"></script><script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script><script>// shortcuts
+// shortcuts
 var $buttonStart = $('button.start'),
     $buttonStop = $('button.stop'),
     $buttonReset = $('button.reset'),
@@ -56,4 +56,4 @@ $buttonReset.click(function() {
 });
 $buttonResetCount.click(function() {
   lockstep.reset(update, true);
-});</script></body></html>
+});

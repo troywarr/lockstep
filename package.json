@@ -39,7 +39,8 @@
     "timer",
     "stopwatch",
     "clock",
-    "interval"
+    "interval",
+    "countdown"
   ],
   "author": {
     "name": "Troy Warr",

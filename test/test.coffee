@@ -26,6 +26,13 @@ clockTime =
   hours: 10
   days: 1
 
+elapsedObj =
+  elapsed:
+    seconds: elapsedTime.seconds
+
+clockObj =
+  clock: clockTime
+
 
 
 # tests
@@ -174,33 +181,33 @@ describe 'Lockstep', ->
 
 
 
-  # describe '#_elapsedTimeToMilliseconds()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('_elapsedTimeToMilliseconds')
-  #
-  #   it 'should return a number', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep._elapsedTimeToMilliseconds(elapsedTime)).to.be.a('number')
-  #
-  #   it 'should return a specific value', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep._elapsedTimeToMilliseconds(elapsedTime)).to.equal(123456789)
-  #
-  #
-  #
-  # describe '#_clockTimeToMilliseconds()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('_clockTimeToMilliseconds')
-  #
-  #   it 'should return a number', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep._clockTimeToMilliseconds(clockTime)).to.be.a('number')
-  #
-  #   it 'should return a specific value', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep._clockTimeToMilliseconds(clockTime)).to.equal(123456789)
+  describe '#_elapsedTimeToRunTime()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_elapsedTimeToRunTime')
+
+    it 'should return a number', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._elapsedTimeToRunTime(elapsedObj)).to.be.a('number')
+
+    it 'should return a specific value', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._elapsedTimeToRunTime(elapsedObj)).to.equal(123456789)
+
+
+
+  describe '#_clockTimeToRunTime()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_clockTimeToRunTime')
+
+    it 'should return a number', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._clockTimeToRunTime(clockObj)).to.be.a('number')
+
+    it 'should return a specific value', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._clockTimeToRunTime(clockObj)).to.equal(123456789)
 
 
 
@@ -238,14 +245,24 @@ describe 'Lockstep', ->
 
 
 
-  describe '#_setInfo()', ->
+  describe '#_setClockTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_setInfo')
+      expect(Lockstep).to.respondTo('_setClockTime')
 
-    it 'should return the context object for chainability', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep._setInfo()).to.equal(lockstep)
+
+
+  describe '#_setElapsedTime()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_setElapsedTime')
+
+
+
+  describe '#_setCount()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_setCount')
 
 
 

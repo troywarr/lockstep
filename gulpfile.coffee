@@ -24,7 +24,8 @@ DEV = !PROD
 paths =
   src: 'src/'
   dist: 'dist/'
-  start: 'index.html'
+  example: 'example/'
+  start: 'example/index.html'
 
 
 
@@ -45,7 +46,7 @@ gulp.task 'clean', (done) ->
 # compile & minify scripts
 gulp.task 'scripts', ->
   gulp
-    .src "#{paths.src}index.coffee"
+    .src "#{paths.src}main.coffee"
     .pipe coffee()
     .pipe browserify
       standalone: 'Lockstep'
@@ -61,29 +62,36 @@ gulp.task 'scripts', ->
 # compile LESS
 gulp.task 'styles', ->
   gulp
-    .src "#{paths.src}index.less"
+    .src "#{paths.example}main.less"
     .pipe less()
-    .pipe gulp.dest paths.dist
+    .pipe gulp.dest "#{paths.dist}example/"
     .pipe gulpIf DEV, browserSync.reload
       stream: true
 
 # copy HTML
 gulp.task 'html', ->
   gulp
-    .src "#{paths.src}index.jade"
+    .src "#{paths.example}index.jade"
     .pipe jade()
-    .pipe gulp.dest paths.dist
+    .pipe gulp.dest "#{paths.dist}example/"
     .pipe gulpIf DEV, browserSync.reload
       stream: true
 
+# copy example script
+gulp.task 'script-example', ->
+  gulp
+    .src "#{paths.example}main.js"
+    .pipe gulp.dest "#{paths.dist}example/"
+
 # watch for changes
 gulp.task 'watch', ->
-  gulp.watch "#{paths.src}*.coffee", ['scripts']
-  gulp.watch "#{paths.src}*.jade", ['html']
-  gulp.watch "#{paths.src}*.less", ['styles']
+  gulp.watch "#{paths.src}**/*.coffee", ['scripts']
+  gulp.watch "#{paths.example}**/*.jade", ['html']
+  gulp.watch "#{paths.example}**/*.less", ['styles']
+  gulp.watch "#{paths.example}**/*.js", ['script-example']
 
 # default task: call with 'gulp' on command line
 gulp.task 'default', ->
-  runSequence 'clean', 'html', 'scripts', 'styles', ->
+  runSequence 'clean', 'html', 'styles', 'script-example', 'scripts', ->
     if DEV
       runSequence 'watch', 'browser-sync'

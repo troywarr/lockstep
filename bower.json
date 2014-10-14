@@ -16,7 +16,8 @@
     "timer",
     "stopwatch",
     "clock",
-    "interval"
+    "interval",
+    "countdown"
   ],
   "license": "MIT",
   "ignore": [

@@ -1,0 +1,80 @@
+doctype html
+html(lang="en")
+
+  head
+
+    meta(charset="utf-8")
+    meta(http-equiv="X-UA-Compatible", content="IE=edge")
+    title Lockstep.js
+    meta(name="description", content="A JavaScript library to create accurate timers.")
+    meta(name="viewport", content="width=device-width, initial-scale=1")
+    link(rel="stylesheet", href="main.css")
+
+  body
+
+    section
+      h2 Clock
+      table.clock
+        tr.microseconds
+          th Microseconds
+          td 0
+        tr.milliseconds
+          th Milliseconds
+          td 0
+        tr.seconds
+          th Seconds
+          td 0
+        tr.minutes
+          th Minutes
+          td 0
+        tr.hours
+          th Hours
+          td 0
+        tr.days
+          th Days
+          td 0
+
+    section
+      h2 Elapsed
+      table.elapsed
+        tr.microseconds
+          th Microseconds
+          td 0
+        tr.milliseconds
+          th Milliseconds
+          td 0
+        tr.seconds
+          th Seconds
+          td 0
+        tr.minutes
+          th Minutes
+          td 0
+        tr.hours
+          th Hours
+          td 0
+        tr.days
+          th Days
+          td 0
+
+    section
+      h2 Count
+      table.count
+        tr.start
+          th Start
+          td 0
+        tr.stop
+          th Stop
+          td 0
+        tr.reset
+          th Reset
+          td 0
+
+    section
+      button.start Start
+      button.stop Stop
+      button.reset Reset
+      button.resetCount Reset with Count
+
+    script(src="../lockstep.js")
+    script(src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js")
+    script(src="main.js")

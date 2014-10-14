@@ -7,13 +7,15 @@ now = require('performance-now')
 
 MSQTY = {}
 MSQTY.microseconds = 0.001
-MSQTY.milliseconds = MSQTY.microseconds * 1000 # 1 (not really useful)
+MSQTY.milliseconds = MSQTY.microseconds * 1000
 MSQTY.seconds = MSQTY.milliseconds * 1000
 MSQTY.minutes = MSQTY.seconds * 60
 MSQTY.hours = MSQTY.minutes * 60
 MSQTY.days = MSQTY.hours * 24
 
 NOOP = ->
+
+MEASURES = ['microseconds', 'milliseconds', 'seconds', 'minutes', 'hours', 'days']
 
 
 
@@ -133,15 +135,18 @@ class Lockstep
     elapsedTime.days = milliseconds / MSQTY.days
     elapsedTime
 
-  # #
-  # _elapsedTimeToMilliseconds: (elapsedTime) ->
-  #   elapsedTime.milliseconds
   #
-  # #
-  # _clockTimeToMilliseconds: (clockTime) ->
-  #   ms = 0
-  #   ms += val * MSQTY[key] for key, val of clockTime
-  #   ms
+  _elapsedTimeToRunTime: (elapsedTime) ->
+    for key, val of elapsedTime.elapsed
+      runTime = MSQTY[key] * val
+    runTime
+
+  #
+  _clockTimeToRunTime: (clockTime) ->
+    runTime = 0
+    for key, val of clockTime.clock
+      runTime += val * MSQTY[key]
+    runTime
 
   #
   _getInfo: ->
@@ -162,8 +167,38 @@ class Lockstep
     }
 
   #
-  _setInfo: (info) ->
-    this
+  _setClockTime: (clockTime) ->
+    runTime = 0
+    for key, val of clockTime
+      if key in MEASURES
+        runTime += MSQTY[key] * val
+      else
+        throw new Error('Bad arguments supplied (wrong property).')
+    @time.run = runTime
+
+  #
+  _setElapsedTime: (elapsedTime) ->
+    propQty = 0
+    for key, val of elapsedTime
+      if ++propQty > 1
+        throw new Error('Bad arguments supplied (too many properties).')
+      if key in MEASURES
+        @time.run = MSQTY[key] * val
+      else
+        throw new Error('Bad arguments supplied (wrong property).')
+    return
+
+  #
+  _setCount: (count) ->
+    for key, val of count
+      if key in ['start', 'stop', 'reset']
+        if @_isInt(val)
+          @count[key] = val
+        else
+          throw new Error('Bad arguments supplied (count value is not an integer).')
+      else
+        throw new Error('Bad arguments supplied (wrong property).')
+    return
 
   #
   _loop: =>
@@ -175,10 +210,15 @@ class Lockstep
     @settings.step(@_getInfo())
 
   #
-  info: (info) ->
+  info: (info, callback = @settings.info) ->
     if info?
       if @_type(info) is 'object' # setter
-        @_setInfo(info)
+        if info.elapsed? and info.clock?
+          throw new Error('Bad arguments supplied (both elapsed and clock times).')
+        if info.elapsed? then @_setElapsedTime(info.elapsed)
+        if info.clock? then @_setClockTime(info.clock)
+        if info.count? then @_setCount(info.count)
+        return this
       else
         throw new Error('Bad arguments supplied (wrong type).')
     else # getter
