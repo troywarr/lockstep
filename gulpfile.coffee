@@ -8,6 +8,7 @@ uglify =      require 'gulp-uglify'
 less =        require 'gulp-less'
 jade =        require 'gulp-jade'
 browserify  = require 'gulp-browserify'
+bump        = require 'gulp-bump'
 browserSync = require 'browser-sync'
 del =         require 'del'
 runSequence = require 'run-sequence'
@@ -16,16 +17,34 @@ yargs =       require 'yargs'
 
 
 
+# shortcuts
+argv = yargs.argv
+
 # environment
-PROD = yargs.argv.prod
+PROD = argv.prod
 DEV = !PROD
 
 # paths
 paths =
-  src: 'src/'
-  dist: 'dist/'
-  example: 'example/'
-  start: 'example/index.html'
+  root: './'
+  src: './src/'
+  dist: './dist/'
+  example: './example/'
+  start: './example/index.html'
+
+
+
+# bump version
+#   e.g., `gulp bump --minor`
+gulp.task 'bump', ->
+  gulp
+    .src ["#{paths.root}bower.json", "#{paths.root}package.json"]
+    .pipe bump
+      type: switch
+        when argv.major then 'major'
+        when argv.minor then 'minor'
+        else 'patch'
+    .pipe gulp.dest paths.root
 
 
 
