@@ -10,6 +10,29 @@ stub = sinon.stub()
 
 noop = ->
 
+exampleTime = 123456789
+
+initialInfo =
+  time:
+    elapsed:
+      microseconds: 0
+      milliseconds: 0
+      seconds: 0
+      minutes: 0
+      hours: 0
+      days: 0
+    clock:
+      microseconds: 0
+      milliseconds: 0
+      seconds: 0
+      minutes: 0
+      hours: 0
+      days: 0
+  count:
+    start: 0
+    stop: 0
+    reset: 0
+
 elapsedTime =
   microseconds: 123456789000
   milliseconds: 123456789
@@ -158,11 +181,11 @@ describe 'Lockstep', ->
 
     it 'should return an object', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToClockTime(123456789)).to.be.an('object')
+      expect(lockstep._runTimeToClockTime(exampleTime)).to.be.an('object')
 
     it 'should return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToClockTime(123456789)).to.deep.equal(clockTime)
+      expect(lockstep._runTimeToClockTime(exampleTime)).to.deep.equal(clockTime)
 
 
 
@@ -173,11 +196,11 @@ describe 'Lockstep', ->
 
     it 'should return an object', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToElapsedTime(123456789)).to.be.an('object')
+      expect(lockstep._runTimeToElapsedTime(exampleTime)).to.be.an('object')
 
     it 'should return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToElapsedTime(123456789)).to.deep.equal(elapsedTime)
+      expect(lockstep._runTimeToElapsedTime(exampleTime)).to.deep.equal(elapsedTime)
 
 
 
@@ -192,7 +215,7 @@ describe 'Lockstep', ->
 
     it 'should return a specific value', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._elapsedTimeToRunTime(elapsedObj)).to.equal(123456789)
+      expect(lockstep._elapsedTimeToRunTime(elapsedObj)).to.equal(exampleTime)
 
 
 
@@ -207,7 +230,7 @@ describe 'Lockstep', ->
 
     it 'should return a specific value', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._clockTimeToRunTime(clockObj)).to.equal(123456789)
+      expect(lockstep._clockTimeToRunTime(clockObj)).to.equal(exampleTime)
 
 
 
@@ -222,26 +245,7 @@ describe 'Lockstep', ->
 
     it 'should initially return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._getInfo()).to.deep.equal
-        time:
-          elapsed:
-            microseconds: 0
-            milliseconds: 0
-            seconds: 0
-            minutes: 0
-            hours: 0
-            days: 0
-          clock:
-            microseconds: 0
-            milliseconds: 0
-            seconds: 0
-            minutes: 0
-            hours: 0
-            days: 0
-        count:
-          start: 0
-          stop: 0
-          reset: 0
+      expect(lockstep._getInfo()).to.deep.equal(initialInfo)
 
 
 
@@ -250,6 +254,18 @@ describe 'Lockstep', ->
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_setClockTime')
 
+    it 'should set run time equivalent to the provided clock time', ->
+      lockstep = new Lockstep(noop)
+      lockstep._setClockTime(clockTime)
+      expect(lockstep.time.run).to.equal(exampleTime)
+
+    it 'should throw if a property is not recognized', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._setClockTime
+          femtoseconds: 1
+      ).to.throw('Bad arguments supplied (wrong property).')
+
 
 
   describe '#_setElapsedTime()', ->
@@ -257,12 +273,61 @@ describe 'Lockstep', ->
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_setElapsedTime')
 
+    it 'should set run time equivalent to the provided elapsed time', ->
+      lockstep = new Lockstep(noop)
+      lockstep._setElapsedTime
+        milliseconds: elapsedTime.milliseconds
+      expect(lockstep.time.run).to.equal(exampleTime)
+
+    it 'should throw if a property is not recognized', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._setElapsedTime
+          femtoseconds: 1
+      ).to.throw('Bad arguments supplied (wrong property).')
+
+    it 'should throw if multiple properties are supplied', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._setElapsedTime
+          microseconds: 1
+          milliseconds: 1
+      ).to.throw('Bad arguments supplied (too many properties).')
+
 
 
   describe '#_setCount()', ->
 
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_setCount')
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_setElapsedTime')
+
+    it 'should set count equivalent to the provided count', ->
+      lockstep = new Lockstep(noop)
+      lockstep._setCount
+        start: 1
+        stop: 1
+        reset: 1
+      expect(lockstep.count).to.deep.equal
+        start: 1
+        stop: 1
+        reset: 1
+
+    it 'should throw if a property value is not an integer', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._setCount
+          start: 'foo'
+      ).to.throw('Bad arguments supplied (count value is not an integer).')
+
+    it 'should throw if a property is not recognized', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._setCount
+          disable: 1
+      ).to.throw('Bad arguments supplied (wrong property).')
 
 
 
@@ -286,20 +351,38 @@ describe 'Lockstep', ->
       expect(Lockstep).to.respondTo('info')
 
     it 'should not throw if no arguments are supplied', ->
+      lockstep = new Lockstep(noop)
       expect(->
-        lockstep = new Lockstep(noop)
         lockstep.info()
       ).to.not.throw()
 
     it 'should throw if the single argument supplied is not an object', ->
+      lockstep = new Lockstep(noop)
       expect(->
-        lockstep = new Lockstep(noop)
         lockstep.info('foo')
       ).to.throw('Bad arguments supplied (wrong type).')
 
+    it 'should throw if both elapsed and clock time are supplied', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep.info
+          elapsed:
+            milliseconds: 1
+          clock:
+            milliseconds: 1
+      ).to.throw('Bad arguments supplied (both elapsed and clock times).')
+
+    it 'should return the context object for chainability, if an object is supplied (setter)', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.info({})).to.equal(lockstep)
+
     # with no arguments, should call ._getInfo()
 
-    # with one argument (an object), should call ._setInfo()
+    # with one argument (an object with an "elapsed" property), should call ._setElapsedTime()
+
+    # with one argument (an object with a "clock" property), should call ._setClockTime()
+
+    # with one argument (an object with a "count" property), should call ._setCount()
 
 
 
@@ -381,32 +464,32 @@ describe 'Lockstep', ->
 
 
 
-  # describe '#add()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('add')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.add()).to.equal(lockstep)
-  #
-  #   # should add the appropriate time
-  #
-  #
-  #
-  # describe '#subtract()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('subtract')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.subtract()).to.equal(lockstep)
-  #
-  #   # should subtract the appropriate time
-  #
-  #
-  #
+  describe '#add()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('add')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.add()).to.equal(lockstep)
+
+    # should add the appropriate time
+
+
+
+  describe '#subtract()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('subtract')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.subtract()).to.equal(lockstep)
+
+    # should subtract the appropriate time
+
+
+
   # describe '#when()', ->
   #
   #   it 'should be callable', ->

@@ -1,9 +1,7 @@
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
-}
-table {
-  font-size: 15px;
+  font-size: 14px;
 }
 th {
   font-weight: normal;
@@ -21,4 +19,7 @@ h2 {
 }
 section {
   margin-bottom: 20px;
+}
+button {
+  margin-right: 5px;
 }

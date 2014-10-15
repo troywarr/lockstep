@@ -270,14 +270,14 @@ class Lockstep
         throw new Error('Bad arguments supplied (wrong type).')
     this
 
-  # #
-  # add: (milliseconds) ->
-  #   this
   #
-  # #
-  # subtract: (milliseconds) ->
-  #   this
+  add: (info, callback = @settings.add) ->
+    this
+
   #
+  subtract: (info, callback = @settings.subtract) ->
+    this
+
   # # run callback at a specific time
   # when: (time, callback) ->
   #   this
