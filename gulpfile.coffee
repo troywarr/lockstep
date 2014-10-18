@@ -26,11 +26,21 @@ DEV = !PROD
 
 # paths
 paths =
-  root: './'
-  src: './src/'
-  dist: './dist/'
-  example: './example/'
-  start: './example/index.html'
+  root: ''
+  src: 'src/'
+  dist: 'dist/'
+  example: 'example/'
+  start: 'example/index.html'
+
+
+
+# error handling
+handleError = (err) ->
+  notify.onError(
+    message: "Error: #{err.message}"
+  )(err)
+  console.log err.toString()
+  @emit 'end'
 
 
 
@@ -67,6 +77,7 @@ gulp.task 'scripts', ->
   gulp
     .src "#{paths.src}main.coffee"
     .pipe coffee()
+    .on 'error', handleError
     .pipe browserify
       standalone: 'Lockstep'
       debug: true
@@ -83,6 +94,7 @@ gulp.task 'styles', ->
   gulp
     .src "#{paths.example}main.less"
     .pipe less()
+    .on 'error', handleError
     .pipe gulp.dest "#{paths.dist}example/"
     .pipe gulpIf DEV, browserSync.reload
       stream: true
@@ -92,6 +104,7 @@ gulp.task 'html', ->
   gulp
     .src "#{paths.example}index.jade"
     .pipe jade()
+    .on 'error', handleError
     .pipe gulp.dest "#{paths.dist}example/"
     .pipe gulpIf DEV, browserSync.reload
       stream: true
