@@ -49,13 +49,6 @@ clockTime =
   hours: 10
   days: 1
 
-elapsedObj =
-  elapsed:
-    seconds: elapsedTime.seconds
-
-clockObj =
-  clock: clockTime
-
 
 
 # tests
@@ -211,11 +204,26 @@ describe 'Lockstep', ->
 
     it 'should return a number', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._elapsedTimeToRunTime(elapsedObj)).to.be.a('number')
+      expect(lockstep._elapsedTimeToRunTime({ seconds: elapsedTime.seconds })).to.be.a('number')
 
     it 'should return a specific value', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._elapsedTimeToRunTime(elapsedObj)).to.equal(exampleTime)
+      expect(lockstep._elapsedTimeToRunTime({ seconds: elapsedTime.seconds })).to.equal(exampleTime)
+
+    it 'should throw if a property is not recognized', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._elapsedTimeToRunTime
+          femtoseconds: 1
+      ).to.throw('Bad arguments supplied (wrong property).')
+
+    it 'should throw if multiple properties are supplied', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._elapsedTimeToRunTime
+          microseconds: 1
+          milliseconds: 1
+      ).to.throw('Bad arguments supplied (too many properties).')
 
 
 
@@ -226,11 +234,18 @@ describe 'Lockstep', ->
 
     it 'should return a number', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._clockTimeToRunTime(clockObj)).to.be.a('number')
+      expect(lockstep._clockTimeToRunTime(clockTime)).to.be.a('number')
 
     it 'should return a specific value', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._clockTimeToRunTime(clockObj)).to.equal(exampleTime)
+      expect(lockstep._clockTimeToRunTime(clockTime)).to.equal(exampleTime)
+
+    it 'should throw if a property is not recognized', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep._clockTimeToRunTime
+          femtoseconds: 1
+      ).to.throw('Bad arguments supplied (wrong property).')
 
 
 
@@ -249,64 +264,21 @@ describe 'Lockstep', ->
 
 
 
-  describe '#_setClockTime()', ->
+  describe '#_adjustRunTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_setClockTime')
-
-    it 'should set run time equivalent to the provided clock time', ->
-      lockstep = new Lockstep(noop)
-      lockstep._setClockTime(clockTime)
-      expect(lockstep.time.run).to.equal(exampleTime)
-
-    it 'should throw if a property is not recognized', ->
-      lockstep = new Lockstep(noop)
-      expect(->
-        lockstep._setClockTime
-          femtoseconds: 1
-      ).to.throw('Bad arguments supplied (wrong property).')
+      expect(Lockstep).to.respondTo('_adjustRunTime')
 
 
 
-  describe '#_setElapsedTime()', ->
+  describe '#_adjustCount()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_setElapsedTime')
-
-    it 'should set run time equivalent to the provided elapsed time', ->
-      lockstep = new Lockstep(noop)
-      lockstep._setElapsedTime
-        milliseconds: elapsedTime.milliseconds
-      expect(lockstep.time.run).to.equal(exampleTime)
-
-    it 'should throw if a property is not recognized', ->
-      lockstep = new Lockstep(noop)
-      expect(->
-        lockstep._setElapsedTime
-          femtoseconds: 1
-      ).to.throw('Bad arguments supplied (wrong property).')
-
-    it 'should throw if multiple properties are supplied', ->
-      lockstep = new Lockstep(noop)
-      expect(->
-        lockstep._setElapsedTime
-          microseconds: 1
-          milliseconds: 1
-      ).to.throw('Bad arguments supplied (too many properties).')
-
-
-
-  describe '#_setCount()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_setCount')
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_setElapsedTime')
+      expect(Lockstep).to.respondTo('_adjustCount')
 
     it 'should set count equivalent to the provided count', ->
       lockstep = new Lockstep(noop)
-      lockstep._setCount
+      lockstep._adjustCount 'set',
         start: 1
         stop: 1
         reset: 1
@@ -318,16 +290,66 @@ describe 'Lockstep', ->
     it 'should throw if a property value is not an integer', ->
       lockstep = new Lockstep(noop)
       expect(->
-        lockstep._setCount
+        lockstep._adjustCount 'set',
           start: 'foo'
       ).to.throw('Bad arguments supplied (count value is not an integer).')
 
     it 'should throw if a property is not recognized', ->
       lockstep = new Lockstep(noop)
       expect(->
-        lockstep._setCount
+        lockstep._adjustCount 'set',
           disable: 1
       ).to.throw('Bad arguments supplied (wrong property).')
+
+
+
+  describe '#_adjustInfo()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_adjustInfo')
+
+    it 'should set run time equivalent of the provided clock time', ->
+      lockstep = new Lockstep(noop)
+      lockstep._adjustInfo 'set',
+        clock: clockTime
+      expect(lockstep.time.run).to.equal(exampleTime)
+
+    it 'should set run time equivalent of the provided elapsed time', ->
+      lockstep = new Lockstep(noop)
+      lockstep._adjustInfo 'set',
+        elapsed:
+            milliseconds: elapsedTime.milliseconds
+      expect(lockstep.time.run).to.equal(exampleTime)
+
+    it 'should add the run time equivalent of the provided clock time', ->
+      lockstep = new Lockstep(noop)
+      lockstep.time.run = exampleTime
+      lockstep._adjustInfo 'add',
+        clock: clockTime
+      expect(lockstep.time.run).to.equal(exampleTime * 2)
+
+    it 'should add the run time equivalent of the provided elapsed time', ->
+      lockstep = new Lockstep(noop)
+      lockstep.time.run = exampleTime
+      lockstep._adjustInfo 'add',
+        elapsed:
+            milliseconds: elapsedTime.milliseconds
+      expect(lockstep.time.run).to.equal(exampleTime * 2)
+
+    it 'should subtract the run time equivalent of the provided clock time', ->
+      lockstep = new Lockstep(noop)
+      lockstep.time.run = exampleTime
+      lockstep._adjustInfo 'subtract',
+        clock: clockTime
+      expect(lockstep.time.run).to.equal(0)
+
+    it 'should subtract the run time equivalent of the provided elapsed time', ->
+      lockstep = new Lockstep(noop)
+      lockstep.time.run = exampleTime
+      lockstep._adjustInfo 'subtract',
+        elapsed:
+            milliseconds: elapsedTime.milliseconds
+      expect(lockstep.time.run).to.equal(0)
 
 
 
@@ -342,47 +364,6 @@ describe 'Lockstep', ->
 
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_step')
-
-
-
-  describe '#info()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('info')
-
-    it 'should not throw if no arguments are supplied', ->
-      lockstep = new Lockstep(noop)
-      expect(->
-        lockstep.info()
-      ).to.not.throw()
-
-    it 'should throw if the single argument supplied is not an object', ->
-      lockstep = new Lockstep(noop)
-      expect(->
-        lockstep.info('foo')
-      ).to.throw('Bad arguments supplied (wrong type).')
-
-    it 'should throw if both elapsed and clock time are supplied', ->
-      lockstep = new Lockstep(noop)
-      expect(->
-        lockstep.info
-          elapsed:
-            milliseconds: 1
-          clock:
-            milliseconds: 1
-      ).to.throw('Bad arguments supplied (both elapsed and clock times).')
-
-    it 'should return the context object for chainability, if an object is supplied (setter)', ->
-      lockstep = new Lockstep(noop)
-      expect(lockstep.info({})).to.equal(lockstep)
-
-    # with no arguments, should call ._getInfo()
-
-    # with one argument (an object with an "elapsed" property), should call ._setElapsedTime()
-
-    # with one argument (an object with a "clock" property), should call ._setClockTime()
-
-    # with one argument (an object with a "count" property), should call ._setCount()
 
 
 
@@ -464,6 +445,47 @@ describe 'Lockstep', ->
 
 
 
+  describe '#info()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('info')
+
+    it 'should not throw if no arguments are supplied', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep.info()
+      ).to.not.throw()
+
+    it 'should throw if the single argument supplied is not an object', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep.info('foo')
+      ).to.throw('Bad arguments supplied (wrong type).')
+
+    it 'should throw if both elapsed and clock time are supplied', ->
+      lockstep = new Lockstep(noop)
+      expect(->
+        lockstep.info
+          elapsed:
+            milliseconds: 1
+          clock:
+            milliseconds: 1
+      ).to.throw('Bad arguments supplied (both elapsed and clock times).')
+
+    it 'should return the context object for chainability, if an object is supplied (setter)', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.info({})).to.equal(lockstep)
+
+    # with no arguments, should call ._getInfo()
+
+    # with one argument (an object with an "elapsed" property), should call ._setElapsedTime()
+
+    # with one argument (an object with a "clock" property), should call ._setClockTime()
+
+    # with one argument (an object with a "count" property), should call ._setCount()
+
+
+
   describe '#add()', ->
 
     it 'should be callable', ->
@@ -471,7 +493,7 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.add()).to.equal(lockstep)
+      expect(lockstep.add({})).to.equal(lockstep)
 
     # should add the appropriate time
 
@@ -484,7 +506,7 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.subtract()).to.equal(lockstep)
+      expect(lockstep.subtract({})).to.equal(lockstep)
 
     # should subtract the appropriate time
 

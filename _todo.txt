@@ -5,3 +5,4 @@ add declarative style (e.g., add data-clock-milliseconds or something to set up 
 use .toFixed (see: http://stackoverflow.com/questions/4512306/get-decimal-portion-of-a-number-with-javascript#comment37449439_4512317)
 add ES6 UMD compatibility and "moduleType": "es6" to bower.json (see http://dontkry.com/posts/code/browserify-and-the-universal-module-definition.html)
 add YUI UMD compatibility and "moduleType": "yui" to bower.json
+only check argument validity in public methods (private methods should therefore always have valid arguments)

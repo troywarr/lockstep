@@ -137,15 +137,24 @@ class Lockstep
 
   #
   _elapsedTimeToRunTime: (elapsedTime) ->
-    for key, val of elapsedTime.elapsed
-      runTime = MSQTY[key] * val
+    propQty = 0
+    for key, val of elapsedTime
+      if ++propQty > 1
+        throw new Error('Bad arguments supplied (too many properties).')
+      if key in MEASURES
+        runTime = MSQTY[key] * val
+      else
+        throw new Error('Bad arguments supplied (wrong property).')
     runTime
 
   #
   _clockTimeToRunTime: (clockTime) ->
     runTime = 0
-    for key, val of clockTime.clock
-      runTime += val * MSQTY[key]
+    for key, val of clockTime
+      if key in MEASURES
+        runTime += MSQTY[key] * val
+      else
+        throw new Error('Bad arguments supplied (wrong property).')
     runTime
 
   #
@@ -167,38 +176,51 @@ class Lockstep
     }
 
   #
-  _setClockTime: (clockTime) ->
-    runTime = 0
-    for key, val of clockTime
-      if key in MEASURES
-        runTime += MSQTY[key] * val
+  _adjustRunTime: (operation, runTime) ->
+    switch operation
+      when 'set'
+        @time.run = runTime
+      when 'add'
+        @time.run += runTime
+      when 'subtract'
+        @time.run -= runTime
       else
-        throw new Error('Bad arguments supplied (wrong property).')
-    @time.run = runTime
-
-  #
-  _setElapsedTime: (elapsedTime) ->
-    propQty = 0
-    for key, val of elapsedTime
-      if ++propQty > 1
-        throw new Error('Bad arguments supplied (too many properties).')
-      if key in MEASURES
-        @time.run = MSQTY[key] * val
-      else
-        throw new Error('Bad arguments supplied (wrong property).')
+        throw new Error('Bad arguments supplied (invalid operation).')
     return
 
   #
-  _setCount: (count) ->
+  _adjustCount: (operation, count) ->
     for key, val of count
       if key in ['start', 'stop', 'reset']
         if @_isInt(val)
-          @count[key] = val
+          switch operation
+            when 'set'
+              @count[key] = val
+            when 'add'
+              @count[key] += val
+            when 'subtract'
+              @count[key] -= val
+            else
+              throw new Error('Bad arguments supplied (invalid operation).')
         else
           throw new Error('Bad arguments supplied (count value is not an integer).')
       else
         throw new Error('Bad arguments supplied (wrong property).')
     return
+
+  #
+  _adjustInfo: (operation, info) ->
+    if @_type(info) is 'object'
+      if info.elapsed? and info.clock?
+        throw new Error('Bad arguments supplied (both elapsed and clock times).')
+      if info.elapsed?
+        @_adjustRunTime(operation, @_elapsedTimeToRunTime(info.elapsed))
+      if info.clock?
+        @_adjustRunTime(operation, @_clockTimeToRunTime(info.clock))
+      if info.count?
+        @_adjustCount(operation, info.count)
+    else
+      throw new Error('Bad arguments supplied (wrong type).')
 
   #
   _loop: =>
@@ -208,22 +230,6 @@ class Lockstep
   #
   _step: ->
     @settings.step(@_getInfo())
-
-  #
-  info: (info, callback = @settings.info) ->
-    if info?
-      if @_type(info) is 'object' # setter
-        if info.elapsed? and info.clock?
-          throw new Error('Bad arguments supplied (both elapsed and clock times).')
-        if info.elapsed? then @_setElapsedTime(info.elapsed)
-        if info.clock? then @_setClockTime(info.clock)
-        if info.count? then @_setCount(info.count)
-        callback?(@_getInfo()) # TODO: ensure that info is time-accurate
-        return this
-      else
-        throw new Error('Bad arguments supplied (wrong type).')
-    else # getter
-      @_getInfo()
 
   #
   start: (callback = @settings.start) ->
@@ -271,12 +277,31 @@ class Lockstep
     this
 
   #
+  info: (info, callback = @settings.info) ->
+    if info? # setter
+      @_adjustInfo('set', info)
+      callback?(@_getInfo()) # TODO: ensure that info is time-accurate
+      return this
+    else # getter
+      @_getInfo()
+
+  #
   add: (info, callback = @settings.add) ->
-    this
+    if info?
+      @_adjustInfo('add', info)
+      callback?(@_getInfo()) # TODO: ensure that info is time-accurate
+      return this
+    else
+      throw new Error('No arguments supplied.')
 
   #
   subtract: (info, callback = @settings.subtract) ->
-    this
+    if info?
+      @_adjustInfo('subtract', info)
+      callback?(@_getInfo()) # TODO: ensure that info is time-accurate
+      return this
+    else
+      throw new Error('No arguments supplied.')
 
   # # run callback at a specific time
   # when: (time, callback) ->
