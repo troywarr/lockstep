@@ -100,10 +100,10 @@ describe 'Lockstep', ->
 
 
 
-  describe '#_checkArguments()', ->
+  describe '#_validateOptions()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_checkArguments')
+      expect(Lockstep).to.respondTo('_validateOptions')
 
     it 'should throw if no arguments are supplied', ->
       expect(->
@@ -338,14 +338,22 @@ describe 'Lockstep', ->
 
     it 'should subtract the run time equivalent of the provided clock time', ->
       lockstep = new Lockstep(noop)
-      lockstep.time.run = exampleTime
+      lockstep.time.run = exampleTime * 2
       lockstep._adjustInfo 'subtract',
         clock: clockTime
-      expect(lockstep.time.run).to.equal(0)
+      expect(lockstep.time.run).to.equal(exampleTime)
 
     it 'should subtract the run time equivalent of the provided elapsed time', ->
       lockstep = new Lockstep(noop)
-      lockstep.time.run = exampleTime
+      lockstep.time.run = exampleTime * 2
+      lockstep._adjustInfo 'subtract',
+        elapsed:
+            milliseconds: elapsedTime.milliseconds
+      expect(lockstep.time.run).to.equal(exampleTime)
+
+    it 'should not allow the run time to fall below 0', ->
+      lockstep = new Lockstep(noop)
+      lockstep.time.run = 1000
       lockstep._adjustInfo 'subtract',
         elapsed:
             milliseconds: elapsedTime.milliseconds

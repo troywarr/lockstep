@@ -25,7 +25,7 @@ class Lockstep
 
   #
   constructor: ->
-    options = @_checkArguments(arguments)
+    options = @_validateOptions(arguments)
     @settings = @_buildSettings(options)
     @running = false
     @microseconds = @_hasHighResolutionTime()
@@ -69,7 +69,7 @@ class Lockstep
     window?.performance?.now? or process?.hrtime?
 
   #
-  _checkArguments: (args) ->
+  _validateOptions: (args) ->
     # check basic arguments
     if args.length is 0 # no arguments
       throw new Error('No arguments supplied.')
@@ -186,7 +186,8 @@ class Lockstep
         @time.run -= runTime
       else
         throw new Error('Bad arguments supplied (invalid operation).')
-    return
+    if not @settings.allowNegativeTime
+      @time.run = Math.max(@time.run, 0)
 
   #
   _adjustCount: (operation, count) ->
