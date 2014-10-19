@@ -81,10 +81,12 @@ gulp.task 'scripts', ->
     .pipe browserify
       standalone: 'Lockstep'
       debug: true
+    .on 'error', handleError
     .pipe rename 'lockstep.js'
     .pipe gulp.dest paths.dist
     .pipe rename 'lockstep.min.js'
     .pipe uglify()
+    .on 'error', handleError
     .pipe gulp.dest paths.dist
     .pipe gulpIf DEV, browserSync.reload
       stream: true
