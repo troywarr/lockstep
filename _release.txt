@@ -1,0 +1,9 @@
+gulp bump [--major, --minor, --patch]
+gaa
+gca 'bump version to x.x.x'
+GitHub (https://github.com/troywarr/lockstep/releases)
+  click "Draft a new release"
+  fill out (use another relase as template)
+  click "Publish release"
+git pull
+npm publish
