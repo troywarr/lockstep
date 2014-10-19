@@ -97,31 +97,31 @@ var gather = function(type) {
         case 'clock':
           return {
             clock: validate({
-              microseconds: parseInt(clock.input.$microseconds.val(), 10),
-              milliseconds: parseInt(clock.input.$milliseconds.val(), 10),
-              seconds: parseInt(clock.input.$seconds.val(), 10),
-              minutes: parseInt(clock.input.$minutes.val(), 10),
-              hours: parseInt(clock.input.$hours.val(), 10),
-              days: parseInt(clock.input.$days.val(), 10)
+              microseconds: parseFloat(clock.input.$microseconds.val(), 10),
+              milliseconds: parseFloat(clock.input.$milliseconds.val(), 10),
+              seconds: parseFloat(clock.input.$seconds.val(), 10),
+              minutes: parseFloat(clock.input.$minutes.val(), 10),
+              hours: parseFloat(clock.input.$hours.val(), 10),
+              days: parseFloat(clock.input.$days.val(), 10)
             })
           };
         case 'elapsed':
           return {
             elapsed: validate({
-              microseconds: parseInt(elapsed.input.$microseconds.val(), 10),
-              milliseconds: parseInt(elapsed.input.$milliseconds.val(), 10),
-              seconds: parseInt(elapsed.input.$seconds.val(), 10),
-              minutes: parseInt(elapsed.input.$minutes.val(), 10),
-              hours: parseInt(elapsed.input.$hours.val(), 10),
-              days: parseInt(elapsed.input.$days.val(), 10)
+              microseconds: parseFloat(elapsed.input.$microseconds.val(), 10),
+              milliseconds: parseFloat(elapsed.input.$milliseconds.val(), 10),
+              seconds: parseFloat(elapsed.input.$seconds.val(), 10),
+              minutes: parseFloat(elapsed.input.$minutes.val(), 10),
+              hours: parseFloat(elapsed.input.$hours.val(), 10),
+              days: parseFloat(elapsed.input.$days.val(), 10)
             })
           };
         case 'count':
           return {
             count: validate({
-              start: parseInt(count.input.$start.val(), 10),
-              stop: parseInt(count.input.$stop.val(), 10),
-              reset: parseInt(count.input.$reset.val(), 10)
+              start: parseFloat(count.input.$start.val(), 10),
+              stop: parseFloat(count.input.$stop.val(), 10),
+              reset: parseFloat(count.input.$reset.val(), 10)
             })
           };
       }
