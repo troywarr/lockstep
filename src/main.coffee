@@ -138,6 +138,7 @@ class Lockstep
   #
   _elapsedTimeToRunTime: (elapsedTime) ->
     propQty = 0
+    runTime = 0 # protect against empty object supplied (e.g., elapsed: {})
     for key, val of elapsedTime
       if ++propQty > 1
         throw new Error('Bad arguments supplied (too many properties).')
@@ -186,7 +187,7 @@ class Lockstep
         @time.run -= runTime
       else
         throw new Error('Bad arguments supplied (invalid operation).')
-    if not @settings.allowNegativeTime
+    if not @settings.allowNegative
       @time.run = Math.max(@time.run, 0)
 
   #
@@ -203,6 +204,8 @@ class Lockstep
               @count[key] -= val
             else
               throw new Error('Bad arguments supplied (invalid operation).')
+          if not @settings.allowNegative
+            @count[key] = Math.max(@count[key], 0)
         else
           throw new Error('Bad arguments supplied (count value is not an integer).')
       else

@@ -17,63 +17,106 @@ html(lang="en")
       table.clock
         tr.microseconds
           th Microseconds
-          td 0
+          td.output 0
+          td
+            input
         tr.milliseconds
           th Milliseconds
-          td 0
+          td.output 0
+          td
+            input
         tr.seconds
           th Seconds
-          td 0
+          td.output 0
+          td
+            input
         tr.minutes
           th Minutes
-          td 0
+          td.output 0
+          td
+            input
         tr.hours
           th Hours
-          td 0
+          td.output 0
+          td
+            input
         tr.days
           th Days
-          td 0
+          td.output 0
+          td
+            input
 
     section
       h2 Elapsed
       table.elapsed
         tr.microseconds
           th Microseconds
-          td 0
+          td.output 0
+          td
+            input
         tr.milliseconds
           th Milliseconds
-          td 0
+          td.output 0
+          td
+            input
         tr.seconds
           th Seconds
-          td 0
+          td.output 0
+          td
+            input
         tr.minutes
           th Minutes
-          td 0
+          td.output 0
+          td
+            input
         tr.hours
           th Hours
-          td 0
+          td.output 0
+          td
+            input
         tr.days
           th Days
-          td 0
+          td.output 0
+          td
+            input
 
     section
       h2 Count
       table.count
         tr.start
           th Start
-          td 0
+          td.output 0
+          td
+            input
         tr.stop
           th Stop
-          td 0
+          td.output 0
+          td
+            input
         tr.reset
           th Reset
-          td 0
+          td.output 0
+          td
+            input
 
     section
       button.start Start
       button.stop Stop
       button.reset Reset
       button.resetCount Reset with Count
+      p
+        label(for="elapsed") Elapsed
+        input(type="checkbox" name="type" id="elapsed" value="elapsed")
+      p
+        label(for="clock") Clock
+        input(type="checkbox" name="type" id="clock" value="clock")
+      p
+        label(for="count") Count
+        input(type="checkbox" name="type" id="count" value="count")
+      button.set Set
+      button.add Add
+      button.subtract Subtract
+      button.clear Clear
 
     script(src="../lockstep.js")
     script(src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js")

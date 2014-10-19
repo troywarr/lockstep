@@ -3,15 +3,23 @@ body {
   margin: 20px;
   font-size: 14px;
 }
+table {
+  width: 100%;
+}
 th {
   font-weight: normal;
   text-align: left;
-  width: 100px;
   padding: 2px 5px;
   background-color: #eee;
 }
 td {
   padding: 3px 5px 4px;
+}
+.output {
+  width: 99%;
+}
+input {
+  width: 50px;
 }
 h2 {
   font-size: 18px;
