@@ -567,66 +567,66 @@ describe 'Lockstep', ->
 
 
 
-  # describe '#when()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('when')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.when()).to.equal(lockstep)
-  #
-  #
-  #
-  # describe '#every()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('every')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.every()).to.equal(lockstep)
-  #
-  #
-  #
-  # describe '#while()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('while')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.while()).to.equal(lockstep)
-  #
-  #
-  #
-  # describe '#during()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('during')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.during()).to.equal(lockstep)
-  #
-  #
-  #
-  # describe '#beginning()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('beginning')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.beginning()).to.equal(lockstep)
-  #
-  #
-  #
-  # describe '#ending()', ->
-  #
-  #   it 'should be callable', ->
-  #     expect(Lockstep).to.respondTo('ending')
-  #
-  #   it 'should return the context object for chainability', ->
-  #     lockstep = new Lockstep(noop)
-  #     expect(lockstep.ending()).to.equal(lockstep)
+  describe '#when()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('when')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.when('foo', noop)).to.equal(lockstep)
+
+
+
+  describe '#every()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('every')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.every('foo', noop)).to.equal(lockstep)
+
+
+
+  describe '#while()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('while')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.while('foo', 'bar', noop)).to.equal(lockstep)
+
+
+
+  describe '#during()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('during')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.during('foo', 'bar', noop, noop)).to.equal(lockstep)
+
+
+
+  describe '#beginning()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('beginning')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.beginning('foo', noop)).to.equal(lockstep)
+
+
+
+  describe '#ending()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('ending')
+
+    it 'should return the context object for chainability', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep.ending('foo', noop)).to.equal(lockstep)

@@ -307,35 +307,80 @@ class Lockstep
     else
       throw new Error('No arguments supplied.')
 
-  # # run callback at a specific time
-  # when: (time, callback) ->
-  #   this
+  # run callback at a specific time
+  when: (time, callback = @settings.when) ->
+    if time?
+      if callback?
+        return this
+      else
+        throw new Error('No callback supplied.')
+    else
+      throw new Error('No arguments supplied.')
+
+  # run callback at a specified time interval
+  # TODO: use @when()
+  every: (time, callback = @settings.every) ->
+    if time?
+      if callback?
+        return this
+      else
+        throw new Error('No callback supplied.')
+    else
+      throw new Error('No arguments supplied.')
+
+  # run callback on each step through a specified time period
+  # TODO: use @when()
+  while: (startTime, endTime, callback = @settings.while) ->
+    if startTime?
+      if endTime?
+        if callback?
+          return this
+        else
+          throw new Error('No callback supplied.')
+      else
+        throw new Error('No end time supplied.')
+    else
+      throw new Error('No arguments supplied.')
+
+  # run callback at the beginning of a specified time period, and another callback at the end
+  # TODO: use @when()
+  during: (startTime, endTime, startCallback = @settings.duringStart, endCallback = @settings.duringEnd) ->
+    if startTime?
+      if endTime?
+        if startCallback?
+          if endCallback?
+            return this
+          else
+            throw new Error('No end callback supplied.')
+        else
+          throw new Error('No start callback supplied.')
+      else
+        throw new Error('No end time supplied.')
+    else
+      throw new Error('No arguments supplied.')
+
   #
-  # # run callback at a specified time interval
-  # # TODO: use @when()
-  # every: (time, callback) ->
-  #   this
+  # TODO: use @during() with an infinity endTime
+  beginning: (startTime, startCallback = @settings.beginning) ->
+    if startTime?
+      if startCallback?
+        @during(startTime, Infinity, startCallback, NOOP)
+        return this
+      else
+        throw new Error('No start callback supplied.')
+    else
+      throw new Error('No arguments supplied.')
+
   #
-  # # run callback on each step through a specified time period
-  # # TODO: use @when()
-  # while: (startTime, endTime, callback) ->
-  #   this
-  #
-  # # run callback at the beginning of a specified time period, and another callback at the end
-  # # TODO: use @when()
-  # during: (startTime, endTime, startCallback, endCallback) ->
-  #   this
-  #
-  # #
-  # # TODO: use @during() with an infinity endTime
-  # beginning: (startTime, startCallback) ->
-  #   @during(startTime, Infinity, startCallback, NOOP)
-  #   this
-  #
-  # #
-  # # TODO: use @during() with a zero startTime
-  # ending: (endTime, endCallback) ->
-  #   this
+  # TODO: use @during() with a zero startTime
+  ending: (endTime, endCallback = @settings.ending) ->
+    if endTime?
+      if endCallback?
+        return this
+      else
+        throw new Error('No end callback supplied.')
+    else
+      throw new Error('No arguments supplied.')
 
 
 

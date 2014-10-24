@@ -74,6 +74,12 @@ gulp.task 'clean', (done) ->
 
 # compile & minify scripts
 gulp.task 'scripts', ->
+
+  # TODO: temporary offline fix
+  gulp
+    .src "#{paths.example}jquery.js"
+    .pipe gulp.dest "#{paths.dist}example/"
+
   gulp
     .src "#{paths.src}main.coffee"
     .pipe coffee()
