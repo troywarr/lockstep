@@ -1,6 +1,7 @@
 gulp bump [--major, --minor, --patch]
 gaa
 gca 'bump version to x.x.x'
+gpush
 GitHub (https://github.com/troywarr/lockstep/releases)
   click "Draft a new release"
   fill out (use another relase as template)

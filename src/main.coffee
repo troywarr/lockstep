@@ -62,7 +62,7 @@ class Lockstep
     if int.length >= length # if the string is already long enough
       int
     else
-      "#{new Array(length - int.length + 1).join('0')}int"
+      "#{new Array(length - int.length + 1).join('0')}#{int}"
 
   #
   _hasHighResolutionTime: ->

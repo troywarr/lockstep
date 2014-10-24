@@ -70,12 +70,28 @@ describe 'Lockstep', ->
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_type')
 
+    it 'should return the appropriate type for an object', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._type({})).to.equal('object')
+
+    it 'should return the appropriate type for a function', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._type(noop)).to.equal('function')
+
 
 
   describe '#_isInt()', ->
 
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_isInt')
+
+    it 'should return true if supplied an integer', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._isInt(1)).to.equal(true)
+
+    it 'should return false if supplied a float', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._isInt(1.1)).to.equal(false)
 
 
 
@@ -84,12 +100,43 @@ describe 'Lockstep', ->
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_merge')
 
+    it 'should combine the properties of two different objects', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._merge(
+        foo: 1
+      ,
+        bar: 2
+      )).to.deep.equal
+        foo: 1
+        bar: 2
+
+    it 'should favor the second object if supplied two identical properties with different values', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._merge(
+        foo: 1
+      ,
+        foo: 2
+      )).to.deep.equal
+        foo: 2
+
 
 
   describe '#_pad()', ->
 
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_pad')
+
+    it 'should return a string value', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._pad(1, 1)).to.be.a.string
+
+    it 'should pad an integer that is shorter than the desired length', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._pad(123, 4)).to.equal('0123')
+
+    it 'should not pad an integer that is longer than the desired length', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._pad(123, 2)).to.equal('123')
 
 
 
