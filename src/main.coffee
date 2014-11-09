@@ -16,6 +16,9 @@ MSQTY.days = MSQTY.hours * 24
 NOOP = ->
 
 MEASURES = ['microseconds', 'milliseconds', 'seconds', 'minutes', 'hours', 'days']
+TIMES = ['elapsed', 'clock']
+COUNTS = ['start', 'stop', 'reset']
+INFO = ['elapsed', 'clock', 'count']
 
 
 
@@ -67,6 +70,73 @@ class Lockstep
   #
   _hasHighResolutionTime: ->
     window?.performance?.now? or process?.hrtime?
+
+  # deep check validity of time object
+  _isValidTime: (time) ->
+    oneTimeType = false
+    if not @_type(time) is 'object' # isn't an object?
+      return false
+    for key, val of time
+      if oneTimeType # already supplied one type of time?
+        return false
+      else
+        oneTimeType = true # set flag
+      if not (key in TIMES and @_type(val) is 'object') # doesn't have a certain property that's an object?
+        return false
+      for key2, val2 of val
+        if not (key2 in MEASURES and @_type(val2) is 'number') # doesn't a certain property that's a number?
+          return false
+    true
+
+  # deep check validity of count object
+  _isValidCount: (count) ->
+    for key, val of count
+      if not (key in COUNTS and @_isInt(val)) # doesn't have a certain property that's an integer?
+        return false
+    true
+
+  # deep check validity of info object
+  _isValidInfo: (info) ->
+    for key, val of info
+      if key in TIMES
+        if not @_isValidTime(val) # isn't a valid time?
+          return false
+      else if key is 'count'
+        if not @_isValidCount(val) # isn't a valid count?
+          return false
+      else # doesn't have a certain property?
+        return false
+    true
+
+  #
+  _validateArguments: (argArray) ->
+    for argInfo in argArray
+      # shortcuts
+      value = argInfo[0]
+      validator = argInfo[1]
+      errorMessageBad = argInfo[2]
+      errorMessageMissing = argInfo[3]
+      # validate
+      if value?
+        if @_type(validator) is 'function' # if this is a validator function
+          if not validator(value)
+            throw new Error(errorMessageBad)
+        else if @_type(validator) is 'string' # if this is a type string
+          switch validator
+            when 'time' # time object
+              if not @_isValidTime(value)
+                throw new Error(errorMessageBad)
+            when 'info' # info object
+              if not @_isValidInfo(value)
+                throw new Error(errorMessageBad)
+            when 'count' # count object
+              if not @_isValidCount(value)
+                throw new Error(errorMessageBad)
+            else
+              if @_type(value) isnt validator # check standard data type
+                throw new Error(errorMessageBad)
+      else if errorMessageMissing? # no value, but it's required
+        throw new Error(errorMessageMissing)
 
   #
   _validateOptions: (args) ->
@@ -191,6 +261,7 @@ class Lockstep
       @time.run = Math.max(@time.run, 0)
 
   #
+  # TODO: new validation (work upward)
   _adjustCount: (operation, count) ->
     for key, val of count
       if key in ['start', 'stop', 'reset']
@@ -214,17 +285,12 @@ class Lockstep
 
   #
   _adjustInfo: (operation, info) ->
-    if @_type(info) is 'object'
-      if info.elapsed? and info.clock?
-        throw new Error('Bad arguments supplied (both elapsed and clock times).')
-      if info.elapsed?
-        @_adjustRunTime(operation, @_elapsedTimeToRunTime(info.elapsed))
-      if info.clock?
-        @_adjustRunTime(operation, @_clockTimeToRunTime(info.clock))
-      if info.count?
-        @_adjustCount(operation, info.count)
-    else
-      throw new Error('Bad arguments supplied (wrong type).')
+    if info.elapsed?
+      @_adjustRunTime(operation, @_elapsedTimeToRunTime(info.elapsed))
+    if info.clock?
+      @_adjustRunTime(operation, @_clockTimeToRunTime(info.clock))
+    if info.count?
+      @_adjustCount(operation, info.count)
 
   #
   _loop: =>
@@ -237,6 +303,9 @@ class Lockstep
 
   #
   start: (callback = @settings.start) ->
+    @_validateArguments [
+      [callback, 'function', 'Callback supplied is not a function.']
+    ]
     if not @running
       @count.start++
       @running = true
@@ -247,6 +316,9 @@ class Lockstep
 
   #
   stop: (callback = @settings.stop) ->
+    @_validateArguments [
+      [callback, 'function', 'Callback supplied is not a function.']
+    ]
     if @running
       raf.cancel(@pulse)
       @time.stop = now() # set stop timestamp
@@ -259,6 +331,9 @@ class Lockstep
 
   #
   reset: (callback = @settings.reset, count) ->
+    @_validateArguments [
+      [callback, 'function', 'Callback supplied is not a function.']
+    ]
     if @time.run > 0
       callbackEligible = true
       @time.run = 0
@@ -273,16 +348,16 @@ class Lockstep
           @count.stop = 0
           @count.reset = 0
           break
-    if callback? and callbackEligible
-      if @_type(callback) is 'function'
-        callback?(@_getInfo()) # TODO: ensure that info is time-accurate
-      else
-        throw new Error('Bad arguments supplied (wrong type).')
+    callbackEligible and callback?(@_getInfo()) # TODO: ensure that info is time-accurate
     this
 
   #
   info: (info, callback = @settings.info) ->
     if info? # setter
+      @_validateArguments [
+        [info, 'info', 'Info supplied is not valid.', 'No arguments supplied.']
+        [callback, 'function', 'Callback supplied is not a function.']
+      ]
       @_adjustInfo('set', info)
       callback?(@_getInfo()) # TODO: ensure that info is time-accurate
       return this
@@ -291,96 +366,80 @@ class Lockstep
 
   #
   add: (info, callback = @settings.add) ->
-    if info?
-      @_adjustInfo('add', info)
-      callback?(@_getInfo()) # TODO: ensure that info is time-accurate
-      return this
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [info, 'info', 'Info supplied is not valid.', 'No arguments supplied.']
+      [callback, 'function', 'Callback supplied is not a function.']
+    ]
+    @_adjustInfo('add', info)
+    callback?(@_getInfo()) # TODO: ensure that info is time-accurate
+    this
 
   #
   subtract: (info, callback = @settings.subtract) ->
-    if info?
-      @_adjustInfo('subtract', info)
-      callback?(@_getInfo()) # TODO: ensure that info is time-accurate
-      return this
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [info, 'info', 'Info supplied is not valid.', 'No arguments supplied.']
+      [callback, 'function', 'Callback supplied is not a function.']
+    ]
+    @_adjustInfo('subtract', info)
+    callback?(@_getInfo()) # TODO: ensure that info is time-accurate
+    this
 
   # run callback at a specific time
   when: (time, callback = @settings.when) ->
-    if time?
-      if callback?
-        return this
-      else
-        throw new Error('No callback supplied.')
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [time, 'time', 'Time supplied is not valid.', 'No arguments supplied.']
+      [callback, 'function', 'Callback supplied is not a function.', 'No callback supplied.']
+    ]
+    this
 
   # run callback at a specified time interval
   # TODO: use @when()
   every: (time, callback = @settings.every) ->
-    if time?
-      if callback?
-        return this
-      else
-        throw new Error('No callback supplied.')
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [time, 'time', 'Time supplied is not valid.', 'No arguments supplied.']
+      [callback, 'function', 'Callback supplied is not a function.', 'No callback supplied.']
+    ]
+    this
 
   # run callback on each step through a specified time period
   # TODO: use @when()
   while: (startTime, endTime, callback = @settings.while) ->
-    if startTime?
-      if endTime?
-        if callback?
-          return this
-        else
-          throw new Error('No callback supplied.')
-      else
-        throw new Error('No end time supplied.')
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [startTime, 'time', 'Start time supplied is not valid.', 'No arguments supplied.']
+      [endTime, 'time', 'End time supplied is not valid.', 'No end time supplied.']
+      [callback, 'function', 'Callback supplied is not a function.', 'No callback supplied.']
+    ]
+    this
 
   # run callback at the beginning of a specified time period, and another callback at the end
   # TODO: use @when()
   during: (startTime, endTime, startCallback = @settings.duringStart, endCallback = @settings.duringEnd) ->
-    if startTime?
-      if endTime?
-        if startCallback?
-          if endCallback?
-            return this
-          else
-            throw new Error('No end callback supplied.')
-        else
-          throw new Error('No start callback supplied.')
-      else
-        throw new Error('No end time supplied.')
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [startTime, 'time', 'Start time supplied is not valid.', 'No arguments supplied.']
+      [endTime, 'time', 'End time supplied is not valid.', 'No end time supplied.']
+      [startCallback, 'function', 'Start callback is not a function.', 'No start callback supplied.']
+      [endCallback, 'function', 'End callback is not a function', 'No end callback supplied.']
+    ]
+    this
 
   #
   # TODO: use @during() with an infinity endTime
   beginning: (startTime, startCallback = @settings.beginning) ->
-    if startTime?
-      if startCallback?
-        @during(startTime, Infinity, startCallback, NOOP)
-        return this
-      else
-        throw new Error('No start callback supplied.')
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [startTime, 'time', 'Start time supplied is not valid.', 'No arguments supplied.']
+      [startCallback, 'function', 'Start callback is not a function.', 'No start callback supplied.']
+    ]
+    @during(startTime, Infinity, startCallback, NOOP)
+    this
 
   #
   # TODO: use @during() with a zero startTime
   ending: (endTime, endCallback = @settings.ending) ->
-    if endTime?
-      if endCallback?
-        return this
-      else
-        throw new Error('No end callback supplied.')
-    else
-      throw new Error('No arguments supplied.')
+    @_validateArguments [
+      [endTime, 'time', 'Time supplied is not valid.', 'No arguments supplied.']
+      [endCallback, 'function', 'End callback is not a function.', 'No end callback supplied.']
+    ]
+    this
 
 
 

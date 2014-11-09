@@ -7,7 +7,7 @@
   ],
   "serve_files": [
     "node_modules/chai/chai.js",
-    "node_modules/sinon/pkg/sinon-1.10.3.js",
+    "node_modules/sinon/pkg/sinon.js",
     "dist/lockstep.js",
     "test/*.js"
   ],

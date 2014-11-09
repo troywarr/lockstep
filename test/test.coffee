@@ -515,7 +515,7 @@ describe 'Lockstep', ->
       lockstep = new Lockstep(noop)
       expect(->
         lockstep.info('foo')
-      ).to.throw('Bad arguments supplied (wrong type).')
+      ).to.throw('Info supplied is not valid.')
 
     it 'should throw if both elapsed and clock time are supplied', ->
       lockstep = new Lockstep(noop)
@@ -525,7 +525,7 @@ describe 'Lockstep', ->
             milliseconds: 1
           clock:
             milliseconds: 1
-      ).to.throw('Bad arguments supplied (both elapsed and clock times).')
+      ).to.throw('Info supplied is not valid.')
 
     it 'should return the context object for chainability, if an object is supplied (setter)', ->
       lockstep = new Lockstep(noop)
@@ -574,7 +574,9 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.when('foo', noop)).to.equal(lockstep)
+      expect(lockstep.when(elapsed:
+        milliseconds: elapsedTime.milliseconds
+      , noop)).to.equal(lockstep)
 
 
 
@@ -585,7 +587,9 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.every('foo', noop)).to.equal(lockstep)
+      expect(lockstep.every(elapsed:
+        milliseconds: elapsedTime.milliseconds
+      , noop)).to.equal(lockstep)
 
 
 
@@ -596,7 +600,12 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.while('foo', 'bar', noop)).to.equal(lockstep)
+      expect(lockstep.while(
+        elapsed:
+          milliseconds: elapsedTime.milliseconds
+      , elapsed:
+          milliseconds: elapsedTime.milliseconds
+      , noop)).to.equal(lockstep)
 
 
 
@@ -607,7 +616,12 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.during('foo', 'bar', noop, noop)).to.equal(lockstep)
+      expect(lockstep.during(
+        elapsed:
+          milliseconds: elapsedTime.milliseconds
+      , elapsed:
+          milliseconds: elapsedTime.milliseconds
+      , noop, noop)).to.equal(lockstep)
 
 
 
@@ -618,7 +632,9 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.beginning('foo', noop)).to.equal(lockstep)
+      expect(lockstep.beginning(elapsed:
+        milliseconds: elapsedTime.milliseconds
+      , noop)).to.equal(lockstep)
 
 
 
@@ -629,4 +645,6 @@ describe 'Lockstep', ->
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep.ending('foo', noop)).to.equal(lockstep)
+      expect(lockstep.ending(elapsed:
+        milliseconds: elapsedTime.milliseconds
+      , noop)).to.equal(lockstep)
