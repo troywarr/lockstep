@@ -13,12 +13,42 @@ MSQTY.minutes = MSQTY.seconds * 60
 MSQTY.hours = MSQTY.minutes * 60
 MSQTY.days = MSQTY.hours * 24
 
-NOOP = ->
-
 MEASURES = ['microseconds', 'milliseconds', 'seconds', 'minutes', 'hours', 'days']
 TIMES = ['elapsed', 'clock']
 COUNTS = ['start', 'stop', 'reset']
 INFO = ['elapsed', 'clock', 'count']
+
+ERRMSG =
+  noArguments: 'No arguments supplied.'
+  options:
+    bad:
+      oneArgument: 'Argument supplied is not a callback function or options object.'
+      twoArguments: 'Arguments supplied are not a callback function followed by an options object.'
+    step:
+      missing: 'Options supplied are incomplete (no valid "step" function).'
+      redundant: 'Options supplied are invalid (redundant "step" function).'
+    pad:
+      bad: 'Options supplied are invalid ("pad" option must have a false or integer value).'
+  callback:
+    bad: 'Callback supplied is not a function.'
+    missing: 'No callback supplied.'
+  startCallback:
+    bad: 'Start callback is not a function.'
+    missing: 'No start callback supplied.'
+  endCallback:
+    bad: 'End callback is not a function.'
+    missing: 'No end callback supplied.'
+  time:
+    bad: 'Time supplied is not valid.'
+  startTime:
+    bad: 'Start time supplied is not valid.'
+  endTime:
+    bad: 'End time supplied is not valid.'
+    missing: 'No end time supplied.'
+  info:
+    bad: 'Info supplied is not valid.'
+
+NOOP = ->
 
 
 
@@ -37,19 +67,12 @@ class Lockstep
       stop: 0
       reset: 0
     @time =
-      start: null # latest timestamp when the timer was started
-      stop: null # latest timestamp when the timer was stopped
-      run: 0 # length that timer has run
-
-  # determine variable type
-  #   see: http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
-  _type: (value) ->
-    ({}).toString.call(value).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
-
-  # determine if a variable is an integer
-  #   see: http://stackoverflow.com/a/14794066/167911
-  _isInt: (value) ->
-    not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
+      running: 0 # length that timer has been running since last started
+      stored: 0 # length that timer has run in the past, after last stopped
+      last:
+        start: null # latest timestamp when the timer was started
+        stop: null # latest timestamp when the timer was stopped
+        reset: null # latest timestamp when the time was reset
 
   # shallow object merge
   #   see: http://stackoverflow.com/a/171256/167911
@@ -67,15 +90,31 @@ class Lockstep
     else
       "#{new Array(length - int.length + 1).join('0')}#{int}"
 
-  #
+  # determine variable type
+  #   see: http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
+  _type: (value) ->
+    ({}).toString.call(value).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+
+  # determine if a variable is an integer
+  #   see: http://stackoverflow.com/a/14794066/167911
+  _isInt: (value) ->
+    not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
+
+  # determine if an object is empty (has no properties of its own)
+  _isEmpty: (obj) ->
+    return false for own key of obj
+    true
+
+  # determine if high-resolution time is available
   _hasHighResolutionTime: ->
     window?.performance?.now? or process?.hrtime?
 
   # deep check validity of time object
+  #  ex: { elapsed: { days: 1 } }
   _isValidTime: (time) ->
-    oneTimeType = false
     if not @_type(time) is 'object' # isn't an object?
       return false
+    oneTimeType = false
     for key, val of time
       if oneTimeType # already supplied one type of time?
         return false
@@ -89,6 +128,7 @@ class Lockstep
     true
 
   # deep check validity of count object
+  #  ex: { start: 1 }
   _isValidCount: (count) ->
     for key, val of count
       if not (key in COUNTS and @_isInt(val)) # doesn't have a certain property that's an integer?
@@ -96,17 +136,51 @@ class Lockstep
     true
 
   # deep check validity of info object
+  #   ex: { elapsed: { days: 1 }, count: { start: 1 } }
   _isValidInfo: (info) ->
+    time = {}
     for key, val of info
       if key in TIMES
-        if not @_isValidTime(val) # isn't a valid time?
-          return false
+        time[key] = val
       else if key is 'count'
         if not @_isValidCount(val) # isn't a valid count?
           return false
       else # doesn't have a certain property?
         return false
+    if not @_isEmpty(time)
+      if not @_isValidTime(time) # isn't a valid time?
+        return false
     true
+
+  #
+  _validateOptions: (args) ->
+    # check basic arguments
+    if args.length is 0 # no arguments
+      throw new Error(ERRMSG.noArguments)
+    else if args.length is 1
+      if @_type(args[0]) is 'function' # 'step' callback only
+        options = { step: args[0] }
+      else if @_type(args[0]) is 'object' # options object only
+        if @_type(args[0].step) is 'function' # options object contains 'step' function
+          options = args[0]
+        else # no 'step' function
+          throw new Error(ERRMSG.options.step.missing)
+      else # bad argument
+        throw new Error(ERRMSG.options.bad.oneArgument)
+    else if args.length >= 2
+      if @_type(args[0]) is 'object' and @_type(args[1]) is 'function' # options object & 'step' callback
+        if args[0].step?
+          throw new Error(ERRMSG.options.step.redundant)
+        else
+          args[0].step = args[1]
+          options = args[0]
+      else # bad arguments
+        throw new Error(ERRMSG.options.bad.twoArguments)
+    # check remaining options
+    if options.pad?
+      if not (options.pad is false or @_isInt(options.pad)) # "pad" option
+        throw new Error(ERRMSG.options.pad.bad)
+    options
 
   #
   _validateArguments: (argArray) ->
@@ -137,36 +211,7 @@ class Lockstep
                 throw new Error(errorMessageBad)
       else if errorMessageMissing? # no value, but it's required
         throw new Error(errorMessageMissing)
-
-  #
-  _validateOptions: (args) ->
-    # check basic arguments
-    if args.length is 0 # no arguments
-      throw new Error('No arguments supplied.')
-    else if args.length is 1
-      if @_type(args[0]) is 'function' # 'step' callback only
-        options = { step: args[0] }
-      else if @_type(args[0]) is 'object' # options object only
-        if @_type(args[0].step) is 'function' # options object contains 'step' function
-          options = args[0]
-        else # no 'step' function
-          throw new Error('Bad arguments supplied (no valid "step" function).')
-      else # bad arguments
-        throw new Error('Bad arguments supplied (wrong type).')
-    else if args.length >= 2
-      if @_type(args[0]) is 'object' and @_type(args[1]) is 'function' # options object & 'step' callback
-        if args[0].step?
-          throw new Error('Bad arguments supplied (redundant "step" function).')
-        else
-          args[0].step = args[1]
-          options = args[0]
-      else # bad arguments
-        throw new Error('Bad arguments supplied (wrong type).')
-    # check remaining options
-    if options.pad?
-      if not (options.pad is false or @_isInt(options.pad)) # "pad" option
-        throw new Error('Bad arguments supplied ("pad" option must have a false or integer value).')
-    options
+    return
 
   #
   _buildSettings: (options) ->
@@ -174,21 +219,6 @@ class Lockstep
       pad: false # integer (or false); pads clock time output to a number of places (and results in a string)
       floor: false # boolean; removes decimal (via Math.floor) from elapsed time output
     @_merge(defaults, options)
-
-  #
-  _runTimeToClockTime: (runTime) ->
-    clockTime = {}
-    if @microseconds
-      clockTime.microseconds = Math.floor((runTime % 1) / MSQTY.microseconds)
-      milliseconds = Math.floor(runTime)
-    else
-      milliseconds = runTime
-    clockTime.milliseconds = milliseconds % 1000
-    clockTime.seconds = Math.floor(milliseconds / MSQTY.seconds) % 60
-    clockTime.minutes = Math.floor(milliseconds / MSQTY.minutes) % 60
-    clockTime.hours = Math.floor(milliseconds / MSQTY.hours) % 24
-    clockTime.days = Math.floor(milliseconds / MSQTY.days)
-    clockTime
 
   #
   _runTimeToElapsedTime: (runTime) ->
@@ -206,38 +236,43 @@ class Lockstep
     elapsedTime
 
   #
+  _runTimeToClockTime: (runTime) ->
+    clockTime = {}
+    if @microseconds
+      clockTime.microseconds = Math.floor((runTime % 1) / MSQTY.microseconds)
+      milliseconds = Math.floor(runTime)
+    else
+      milliseconds = runTime
+    clockTime.milliseconds = milliseconds % 1000
+    clockTime.seconds = Math.floor(milliseconds / MSQTY.seconds) % 60
+    clockTime.minutes = Math.floor(milliseconds / MSQTY.minutes) % 60
+    clockTime.hours = Math.floor(milliseconds / MSQTY.hours) % 24
+    clockTime.days = Math.floor(milliseconds / MSQTY.days)
+    clockTime
+
+  #
   _elapsedTimeToRunTime: (elapsedTime) ->
-    propQty = 0
     runTime = 0 # protect against empty object supplied (e.g., elapsed: {})
     for key, val of elapsedTime
-      if ++propQty > 1
-        throw new Error('Bad arguments supplied (too many properties).')
-      if key in MEASURES
-        runTime = MSQTY[key] * val
-      else
-        throw new Error('Bad arguments supplied (wrong property).')
+      runTime = MSQTY[key] * val
     runTime
 
   #
   _clockTimeToRunTime: (clockTime) ->
-    runTime = 0
+    runTime = 0 # protect against empty object supplied (e.g., clock: {})
     for key, val of clockTime
-      if key in MEASURES
-        runTime += MSQTY[key] * val
-      else
-        throw new Error('Bad arguments supplied (wrong property).')
+      runTime += MSQTY[key] * val
     runTime
 
   #
   _getInfo: ->
-    runTime = if @running # timer is currently running
-      @time.run + now() - @time.start
-    else # timer is stopped, or has never run
-      @time.run
-    elapsed = @_runTimeToElapsedTime(runTime)
-    clock = @_runTimeToClockTime(runTime)
-    if @settings.floor then elapsed = Math.floor(val) for key, val of elapsed
-    if @settings.pad then val = @_pad(val, @settings.pad) for key, val of clock
+    totalTime = @time.stored + @time.running
+    elapsed = @_runTimeToElapsedTime(totalTime)
+    clock = @_runTimeToClockTime(totalTime)
+    if @settings.floor
+      elapsed = Math.floor(val) for key, val of elapsed
+    if @settings.pad
+      val = @_pad(val, @settings.pad) for key, val of clock
     {
       time: {
         elapsed
@@ -247,48 +282,40 @@ class Lockstep
     }
 
   #
-  _adjustRunTime: (operation, runTime) ->
+  _adjustTime: (operation, runTime) ->
+    called = now()
+    @time.last.start = called
+    @time.running = 0
     switch operation
       when 'set'
-        @time.run = runTime
+        @time.stored = runTime
       when 'add'
-        @time.run += runTime
+        @time.stored += runTime
       when 'subtract'
-        @time.run -= runTime
-      else
-        throw new Error('Bad arguments supplied (invalid operation).')
+        @time.stored -= runTime
     if not @settings.allowNegative
-      @time.run = Math.max(@time.run, 0)
+      @time.stored = Math.max(@time.stored, 0)
 
   #
-  # TODO: new validation (work upward)
   _adjustCount: (operation, count) ->
     for key, val of count
-      if key in ['start', 'stop', 'reset']
-        if @_isInt(val)
-          switch operation
-            when 'set'
-              @count[key] = val
-            when 'add'
-              @count[key] += val
-            when 'subtract'
-              @count[key] -= val
-            else
-              throw new Error('Bad arguments supplied (invalid operation).')
-          if not @settings.allowNegative
-            @count[key] = Math.max(@count[key], 0)
-        else
-          throw new Error('Bad arguments supplied (count value is not an integer).')
-      else
-        throw new Error('Bad arguments supplied (wrong property).')
+      switch operation
+        when 'set'
+          @count[key] = val
+        when 'add'
+          @count[key] += val
+        when 'subtract'
+          @count[key] -= val
+      if not @settings.allowNegative
+        @count[key] = Math.max(@count[key], 0)
     return
 
   #
   _adjustInfo: (operation, info) ->
     if info.elapsed?
-      @_adjustRunTime(operation, @_elapsedTimeToRunTime(info.elapsed))
+      @_adjustTime(operation, @_elapsedTimeToRunTime(info.elapsed))
     if info.clock?
-      @_adjustRunTime(operation, @_clockTimeToRunTime(info.clock))
+      @_adjustTime(operation, @_clockTimeToRunTime(info.clock))
     if info.count?
       @_adjustCount(operation, info.count)
 
@@ -298,48 +325,53 @@ class Lockstep
     @_step()
 
   #
-  _step: ->
+  _step: (timeNow = now()) ->
+    @time.running = timeNow - @time.last.start
     @settings.step(@_getInfo())
 
   #
   start: (callback = @settings.start) ->
+    called = now()
     @_validateArguments [
-      [callback, 'function', 'Callback supplied is not a function.']
+      [callback, 'function', ERRMSG.callback.bad]
     ]
     if not @running
       @count.start++
       @running = true
-      @time.start = now() # set start timestamp
+      @time.last.start = called # set start timestamp
       @_loop()
       callback?(@_getInfo()) # TODO: ensure that info is time-accurate
     this
 
   #
   stop: (callback = @settings.stop) ->
+    called = now()
     @_validateArguments [
-      [callback, 'function', 'Callback supplied is not a function.']
+      [callback, 'function', ERRMSG.callback.bad]
     ]
     if @running
       raf.cancel(@pulse)
-      @time.stop = now() # set stop timestamp
-      @time.run += @time.stop - @time.start # add run time
       @count.stop++
       @running = false
-      @_step() # final step
+      @time.last.stop = called # set stop timestamp
+      @_step(called) # final step
+      @time.stored += @time.running
+      @time.running = 0
       callback?(@_getInfo()) # TODO: ensure that info is time-accurate
     this
 
   #
   reset: (callback = @settings.reset, count) ->
+    called = now()
     @_validateArguments [
-      [callback, 'function', 'Callback supplied is not a function.']
+      [callback, 'function', ERRMSG.callback.bad]
     ]
-    if @time.run > 0
+    if @time.running > 0 or @time.stored > 0
       callbackEligible = true
-      @time.run = 0
+      @time.running = @time.stored = 0
       @count.reset++
-      @time.start = now() # set start timestamp
-      @time.stop = null
+      @time.last.reset = @time.last.start = called # set start & reset timestamps
+      @time.last.stop = null
     if count # then if any counts are greater than 0, reset all
       for key, val of @count
         if val > 0
@@ -355,8 +387,8 @@ class Lockstep
   info: (info, callback = @settings.info) ->
     if info? # setter
       @_validateArguments [
-        [info, 'info', 'Info supplied is not valid.', 'No arguments supplied.']
-        [callback, 'function', 'Callback supplied is not a function.']
+        [info, 'info', ERRMSG.info.bad, ERRMSG.noArguments]
+        [callback, 'function', ERRMSG.callback.bad]
       ]
       @_adjustInfo('set', info)
       callback?(@_getInfo()) # TODO: ensure that info is time-accurate
@@ -367,8 +399,8 @@ class Lockstep
   #
   add: (info, callback = @settings.add) ->
     @_validateArguments [
-      [info, 'info', 'Info supplied is not valid.', 'No arguments supplied.']
-      [callback, 'function', 'Callback supplied is not a function.']
+      [info, 'info', ERRMSG.info.bad, ERRMSG.noArguments]
+      [callback, 'function', ERRMSG.callback.bad]
     ]
     @_adjustInfo('add', info)
     callback?(@_getInfo()) # TODO: ensure that info is time-accurate
@@ -377,8 +409,8 @@ class Lockstep
   #
   subtract: (info, callback = @settings.subtract) ->
     @_validateArguments [
-      [info, 'info', 'Info supplied is not valid.', 'No arguments supplied.']
-      [callback, 'function', 'Callback supplied is not a function.']
+      [info, 'info', ERRMSG.info.bad, ERRMSG.noArguments]
+      [callback, 'function', ERRMSG.callback.bad]
     ]
     @_adjustInfo('subtract', info)
     callback?(@_getInfo()) # TODO: ensure that info is time-accurate
@@ -387,8 +419,8 @@ class Lockstep
   # run callback at a specific time
   when: (time, callback = @settings.when) ->
     @_validateArguments [
-      [time, 'time', 'Time supplied is not valid.', 'No arguments supplied.']
-      [callback, 'function', 'Callback supplied is not a function.', 'No callback supplied.']
+      [time, 'time', ERRMSG.time.bad, ERRMSG.noArguments]
+      [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
     this
 
@@ -396,8 +428,8 @@ class Lockstep
   # TODO: use @when()
   every: (time, callback = @settings.every) ->
     @_validateArguments [
-      [time, 'time', 'Time supplied is not valid.', 'No arguments supplied.']
-      [callback, 'function', 'Callback supplied is not a function.', 'No callback supplied.']
+      [time, 'time', ERRMSG.time.bad, ERRMSG.noArguments]
+      [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
     this
 
@@ -405,9 +437,9 @@ class Lockstep
   # TODO: use @when()
   while: (startTime, endTime, callback = @settings.while) ->
     @_validateArguments [
-      [startTime, 'time', 'Start time supplied is not valid.', 'No arguments supplied.']
-      [endTime, 'time', 'End time supplied is not valid.', 'No end time supplied.']
-      [callback, 'function', 'Callback supplied is not a function.', 'No callback supplied.']
+      [startTime, 'time', ERRMSG.startTime.bad, ERRMSG.noArguments]
+      [endTime, 'time', ERRMSG.endTime.bad, ERRMSG.endTime.missing]
+      [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
     this
 
@@ -415,10 +447,10 @@ class Lockstep
   # TODO: use @when()
   during: (startTime, endTime, startCallback = @settings.duringStart, endCallback = @settings.duringEnd) ->
     @_validateArguments [
-      [startTime, 'time', 'Start time supplied is not valid.', 'No arguments supplied.']
-      [endTime, 'time', 'End time supplied is not valid.', 'No end time supplied.']
-      [startCallback, 'function', 'Start callback is not a function.', 'No start callback supplied.']
-      [endCallback, 'function', 'End callback is not a function', 'No end callback supplied.']
+      [startTime, 'time', ERRMSG.startTime.bad, ERRMSG.noArguments]
+      [endTime, 'time', ERRMSG.endTime.bad, ERRMSG.endTime.missing]
+      [startCallback, 'function', ERRMSG.startCallback.bad, ERRMSG.startCallback.missing]
+      [endCallback, 'function', ERRMSG.endCallback.bad, ERRMSG.endCallback.missing]
     ]
     this
 
@@ -426,8 +458,8 @@ class Lockstep
   # TODO: use @during() with an infinity endTime
   beginning: (startTime, startCallback = @settings.beginning) ->
     @_validateArguments [
-      [startTime, 'time', 'Start time supplied is not valid.', 'No arguments supplied.']
-      [startCallback, 'function', 'Start callback is not a function.', 'No start callback supplied.']
+      [startTime, 'time', ERRMSG.startTime.bad, ERRMSG.noArguments]
+      [startCallback, 'function', ERRMSG.startCallback.bad, ERRMSG.startCallback.missing]
     ]
     @during(startTime, Infinity, startCallback, NOOP)
     this
@@ -436,8 +468,8 @@ class Lockstep
   # TODO: use @during() with a zero startTime
   ending: (endTime, endCallback = @settings.ending) ->
     @_validateArguments [
-      [endTime, 'time', 'Time supplied is not valid.', 'No arguments supplied.']
-      [endCallback, 'function', 'End callback is not a function.', 'No end callback supplied.']
+      [endTime, 'time', ERRMSG.time.bad, ERRMSG.noArguments]
+      [endCallback, 'function', ERRMSG.endCallback.bad, ERRMSG.endCallback.missing]
     ]
     this
 

@@ -6,3 +6,4 @@ use .toFixed (see: http://stackoverflow.com/questions/4512306/get-decimal-portio
 add ES6 UMD compatibility and "moduleType": "es6" to bower.json (see http://dontkry.com/posts/code/browserify-and-the-universal-module-definition.html)
 add YUI UMD compatibility and "moduleType": "yui" to bower.json
 only check argument validity in public methods (private methods should therefore always have valid arguments)
+don't allow exponent (see microseconds immediately after reset)

@@ -177,6 +177,7 @@ button.$add.click(function() {
   var values = getValues(),
       i;
   for (i = 0; i < values.length; i++) {
+    console.log(values[i]);
     lockstep.add(values[i], update);
   }
 });
