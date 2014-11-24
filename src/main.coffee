@@ -17,6 +17,7 @@ MEASURES = ['microseconds', 'milliseconds', 'seconds', 'minutes', 'hours', 'days
 TIMES = ['elapsed', 'clock']
 COUNTS = ['start', 'stop', 'reset']
 INFO = ['elapsed', 'clock', 'count']
+CALLBACKS = ['when', 'every', 'while', 'during', 'beginning', 'ending']
 
 ERRMSG =
   noArguments: 'No arguments supplied.'
@@ -47,6 +48,12 @@ ERRMSG =
     missing: 'No end time supplied.'
   info:
     bad: 'Info supplied is not valid.'
+  condition:
+    bad: 'Condition callback is not a function.'
+    missing: 'No condition callback supplied.'
+  executionQty:
+    bad: 'Execution quantity supplied is not an integer or Infinity.'
+    missing: 'No execution quantity supplied.'
 
 NOOP = ->
 
@@ -73,6 +80,7 @@ class Lockstep
         start: null # latest timestamp when the timer was started
         stop: null # latest timestamp when the timer was stopped
         reset: null # latest timestamp when the time was reset
+    @callbacks = []
 
   # shallow object merge
   #   see: http://stackoverflow.com/a/171256/167911
@@ -99,6 +107,10 @@ class Lockstep
   #   see: http://stackoverflow.com/a/14794066/167911
   _isInt: (value) ->
     not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
+
+  # determine if a variable is Infinity (exclude -Infinity)
+  _isInf: (value) ->
+    value is Number.POSITIVE_INFINITY
 
   # determine if an object is empty (has no properties of its own)
   _isEmpty: (obj) ->
@@ -206,6 +218,9 @@ class Lockstep
             when 'count' # count object
               if not @_isValidCount(value)
                 throw new Error(errorMessageBad)
+            when 'executionQty'
+              if not (@_isInt(value) or @_isInf(value))
+                throw new Error(errorMessageBad)
             else
               if @_type(value) isnt validator # check standard data type
                 throw new Error(errorMessageBad)
@@ -221,13 +236,23 @@ class Lockstep
     @_merge(defaults, options)
 
   #
-  _runTimeToElapsedTime: (runTime) ->
+  _fireCallbacks: (info) ->
+    for obj, i in @callbacks
+      if obj.executionQty > 0 # if there are more executions left
+        if obj.condition(info) # if it passes the condition test
+          obj.callback(info) # run the callback
+          obj.executionQty-- # decrement the execution quantity
+      else
+        @callbacks.splice(i, 1) # remove the callback
+
+  #
+  _runningTimeToElapsedTime: (runningTime) ->
     elapsedTime = {}
     if @microseconds
-      elapsedTime.microseconds = runTime / MSQTY.microseconds
-      milliseconds = runTime
+      elapsedTime.microseconds = runningTime / MSQTY.microseconds
+      milliseconds = runningTime
     else
-      milliseconds = runTime
+      milliseconds = runningTime
     elapsedTime.milliseconds = milliseconds
     elapsedTime.seconds = milliseconds / MSQTY.seconds
     elapsedTime.minutes = milliseconds / MSQTY.minutes
@@ -236,13 +261,13 @@ class Lockstep
     elapsedTime
 
   #
-  _runTimeToClockTime: (runTime) ->
+  _runningTimeToClockTime: (runningTime) ->
     clockTime = {}
     if @microseconds
-      clockTime.microseconds = Math.floor((runTime % 1) / MSQTY.microseconds)
-      milliseconds = Math.floor(runTime)
+      clockTime.microseconds = Math.floor((runningTime % 1) / MSQTY.microseconds)
+      milliseconds = Math.floor(runningTime)
     else
-      milliseconds = runTime
+      milliseconds = runningTime
     clockTime.milliseconds = milliseconds % 1000
     clockTime.seconds = Math.floor(milliseconds / MSQTY.seconds) % 60
     clockTime.minutes = Math.floor(milliseconds / MSQTY.minutes) % 60
@@ -250,25 +275,32 @@ class Lockstep
     clockTime.days = Math.floor(milliseconds / MSQTY.days)
     clockTime
 
-  #
-  _elapsedTimeToRunTime: (elapsedTime) ->
-    runTime = 0 # protect against empty object supplied (e.g., elapsed: {})
+  # convert the supplied elapsed time to running time
+  _elapsedTimeToRunningTime: (elapsedTime) ->
+    runningTime = 0 # protect against empty object supplied (e.g., elapsed: {})
     for key, val of elapsedTime
-      runTime = MSQTY[key] * val
-    runTime
+      runningTime = MSQTY[key] * val
+    runningTime
 
-  #
-  _clockTimeToRunTime: (clockTime) ->
-    runTime = 0 # protect against empty object supplied (e.g., clock: {})
+  # convert the supplied clock time to running time
+  _clockTimeToRunningTime: (clockTime) ->
+    runningTime = 0 # protect against empty object supplied (e.g., clock: {})
     for key, val of clockTime
-      runTime += MSQTY[key] * val
-    runTime
+      runningTime += MSQTY[key] * val
+    runningTime
+
+  # convert the supplied time (when elapsed or clock is not known) to running time
+  _toRunningTime: (time) ->
+    if time.elapsed?
+      return @_elapsedTimeToRunningTime(time.elapsed)
+    else if time.clock?
+      return @_clockTimeToRunningTime(time.clock)
 
   #
   _getInfo: ->
     totalTime = @time.stored + @time.running
-    elapsed = @_runTimeToElapsedTime(totalTime)
-    clock = @_runTimeToClockTime(totalTime)
+    elapsed = @_runningTimeToElapsedTime(totalTime)
+    clock = @_runningTimeToClockTime(totalTime)
     if @settings.floor
       elapsed = Math.floor(val) for key, val of elapsed
     if @settings.pad
@@ -282,17 +314,17 @@ class Lockstep
     }
 
   #
-  _adjustTime: (operation, runTime) ->
+  _adjustTime: (operation, runningTime) ->
     called = now()
     @time.last.start = called
     @time.running = 0
     switch operation
       when 'set'
-        @time.stored = runTime
+        @time.stored = runningTime
       when 'add'
-        @time.stored += runTime
+        @time.stored += runningTime
       when 'subtract'
-        @time.stored -= runTime
+        @time.stored -= runningTime
     if not @settings.allowNegative
       @time.stored = Math.max(@time.stored, 0)
 
@@ -313,9 +345,9 @@ class Lockstep
   #
   _adjustInfo: (operation, info) ->
     if info.elapsed?
-      @_adjustTime(operation, @_elapsedTimeToRunTime(info.elapsed))
+      @_adjustTime(operation, @_elapsedTimeToRunningTime(info.elapsed))
     if info.clock?
-      @_adjustTime(operation, @_clockTimeToRunTime(info.clock))
+      @_adjustTime(operation, @_clockTimeToRunningTime(info.clock))
     if info.count?
       @_adjustCount(operation, info.count)
 
@@ -325,9 +357,25 @@ class Lockstep
     @_step()
 
   #
+  # TODO: make sure order is correct, and no time accumulates while running code
   _step: (timeNow = now()) ->
     @time.running = timeNow - @time.last.start
-    @settings.step(@_getInfo())
+    info = @_getInfo()
+    @settings.step(info)
+    @_fireCallbacks(info)
+
+  #
+  registerCallback: (executionQty, condition, callback) ->
+    @_validateArguments [
+      [executionQty, 'executionQty', ERRMSG.executionQty.bad, ERRMSG.noArguments]
+      [condition, 'function', ERRMSG.condition.bad, ERRMSG.condition.missing]
+      [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
+    ]
+    @callbacks.push {
+      executionQty
+      condition
+      callback
+    }
 
   #
   start: (callback = @settings.start) ->
@@ -422,6 +470,9 @@ class Lockstep
       [time, 'time', ERRMSG.time.bad, ERRMSG.noArguments]
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
+    @registerCallback(1, (info) =>
+      @_elapsedTimeToRunningTime(info.time.elapsed) >= @_toRunningTime(time)
+    , callback)
     this
 
   # run callback at a specified time interval
@@ -441,6 +492,9 @@ class Lockstep
       [endTime, 'time', ERRMSG.endTime.bad, ERRMSG.endTime.missing]
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
+    @registerCallback(Infinity, (info) =>
+      @_toRunningTime(startTime) <= @_elapsedTimeToRunningTime(info.time.elapsed) <= @_toRunningTime(endTime)
+    , callback)
     this
 
   # run callback at the beginning of a specified time period, and another callback at the end

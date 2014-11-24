@@ -268,63 +268,63 @@ describe 'Lockstep', ->
 
 
 
-  describe '#_runTimeToElapsedTime()', ->
+  describe '#_runningTimeToElapsedTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_runTimeToElapsedTime')
+      expect(Lockstep).to.respondTo('_runningTimeToElapsedTime')
 
     it 'should return an object', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToElapsedTime(exampleTime)).to.be.an('object')
+      expect(lockstep._runningTimeToElapsedTime(exampleTime)).to.be.an('object')
 
     it 'should return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToElapsedTime(exampleTime)).to.deep.equal(elapsedTime)
+      expect(lockstep._runningTimeToElapsedTime(exampleTime)).to.deep.equal(elapsedTime)
 
 
 
-  describe '#_runTimeToClockTime()', ->
+  describe '#_runningTimeToClockTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_runTimeToClockTime')
+      expect(Lockstep).to.respondTo('_runningTimeToClockTime')
 
     it 'should return an object', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToClockTime(exampleTime)).to.be.an('object')
+      expect(lockstep._runningTimeToClockTime(exampleTime)).to.be.an('object')
 
     it 'should return specific properties and values', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._runTimeToClockTime(exampleTime)).to.deep.equal(clockTime)
+      expect(lockstep._runningTimeToClockTime(exampleTime)).to.deep.equal(clockTime)
 
 
 
-  describe '#_elapsedTimeToRunTime()', ->
+  describe '#_elapsedTimeToRunningTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_elapsedTimeToRunTime')
+      expect(Lockstep).to.respondTo('_elapsedTimeToRunningTime')
 
     it 'should return a number', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._elapsedTimeToRunTime({ seconds: elapsedTime.seconds })).to.be.a('number')
+      expect(lockstep._elapsedTimeToRunningTime({ seconds: elapsedTime.seconds })).to.be.a('number')
 
     it 'should return a specific value', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._elapsedTimeToRunTime({ seconds: elapsedTime.seconds })).to.equal(exampleTime)
+      expect(lockstep._elapsedTimeToRunningTime({ seconds: elapsedTime.seconds })).to.equal(exampleTime)
 
 
 
-  describe '#_clockTimeToRunTime()', ->
+  describe '#_clockTimeToRunningTime()', ->
 
     it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_clockTimeToRunTime')
+      expect(Lockstep).to.respondTo('_clockTimeToRunningTime')
 
     it 'should return a number', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._clockTimeToRunTime(clockTime)).to.be.a('number')
+      expect(lockstep._clockTimeToRunningTime(clockTime)).to.be.a('number')
 
     it 'should return a specific value', ->
       lockstep = new Lockstep(noop)
-      expect(lockstep._clockTimeToRunTime(clockTime)).to.equal(exampleTime)
+      expect(lockstep._clockTimeToRunningTime(clockTime)).to.equal(exampleTime)
 
 
 
