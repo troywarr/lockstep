@@ -238,12 +238,12 @@ class Lockstep
   #
   _fireCallbacks: (info) ->
     for obj, i in @callbacks
-      if obj.executionQty > 0 # if there are more executions left
-        if obj.condition(info) # if it passes the condition test
-          obj.callback(info) # run the callback
-          obj.executionQty-- # decrement the execution quantity
+      obj.called++ # increment the called count
+      if obj.condition(info, obj.called) # if it passes the condition test
+        obj.callback(info) # run the callback
+        obj.passed++ # increment the passed count
       else
-        @callbacks.splice(i, 1) # remove the callback
+        obj.failed++ # increment the failed count
 
   #
   _runningTimeToElapsedTime: (runningTime) ->
@@ -365,14 +365,16 @@ class Lockstep
     @_fireCallbacks(info)
 
   #
-  registerCallback: (executionQty, condition, callback) ->
+  registerCallback: (condition, callback) ->
     @_validateArguments [
-      [executionQty, 'executionQty', ERRMSG.executionQty.bad, ERRMSG.noArguments]
       [condition, 'function', ERRMSG.condition.bad, ERRMSG.condition.missing]
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
     @callbacks.push {
-      executionQty
+      meta:
+        called: 0
+        passed: 0
+        failed: 0
       condition
       callback
     }
@@ -470,8 +472,8 @@ class Lockstep
       [time, 'time', ERRMSG.time.bad, ERRMSG.noArguments]
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
-    @registerCallback(1, (info) =>
-      @_elapsedTimeToRunningTime(info.time.elapsed) >= @_toRunningTime(time)
+    @registerCallback((info, meta) =>
+      meta.passed is 0 and @_elapsedTimeToRunningTime(info.time.elapsed) >= @_toRunningTime(time)
     , callback)
     this
 
@@ -492,7 +494,7 @@ class Lockstep
       [endTime, 'time', ERRMSG.endTime.bad, ERRMSG.endTime.missing]
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
-    @registerCallback(Infinity, (info) =>
+    @registerCallback((info) =>
       @_toRunningTime(startTime) <= @_elapsedTimeToRunningTime(info.time.elapsed) <= @_toRunningTime(endTime)
     , callback)
     this
