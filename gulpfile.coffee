@@ -45,7 +45,7 @@ handleError = (err) ->
 
 
 # bump version
-#   e.g., `gulp bump --minor`
+#   e.g., `gulp bump --patch` (default)
 gulp.task 'bump', ->
   gulp
     .src ["#{paths.root}bower.json", "#{paths.root}package.json"]

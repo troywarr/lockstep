@@ -51,11 +51,31 @@ ERRMSG =
   condition:
     bad: 'Condition callback is not a function.'
     missing: 'No condition callback supplied.'
-  executionQty:
-    bad: 'Execution quantity supplied is not an integer or Infinity.'
-    missing: 'No execution quantity supplied.'
 
 NOOP = ->
+
+INITIAL =
+  meta: -> # properties defined as functions to avoid reference assignment
+    called:
+      last: 0 # last elapsed time that test function was run
+      count: 0 # number of times that test function has been run
+    passed:
+      last: 0 # last elapsed time that test function passed
+      count: 0 # number of times that test function has passed
+    failed:
+      last: 0 # last elapsed time that test function failed
+      count: 0 # number of times that test function has failed
+  count: ->
+    start: 0 # number of times that the instance has been started
+    stop: 0 # number of times that the instance has been stopped
+    reset: 0 # number of times that the instance has been reset
+  time: ->
+    running: 0 # length that timer has been running since last started
+    stored: 0 # length that timer has run in the past, after last stopped
+    last:
+      start: null # latest timestamp when the timer was started
+      stop: null # latest timestamp when the timer was stopped
+      reset: null # latest timestamp when the time was reset
 
 
 
@@ -67,20 +87,11 @@ class Lockstep
   constructor: ->
     options = @_validateOptions(arguments)
     @settings = @_buildSettings(options)
-    @running = false
-    @microseconds = @_hasHighResolutionTime()
-    @count =
-      start: 0
-      stop: 0
-      reset: 0
-    @time =
-      running: 0 # length that timer has been running since last started
-      stored: 0 # length that timer has run in the past, after last stopped
-      last:
-        start: null # latest timestamp when the timer was started
-        stop: null # latest timestamp when the timer was stopped
-        reset: null # latest timestamp when the time was reset
-    @callbacks = []
+    @running = false # instance is not running initially
+    @microseconds = @_hasHighResolutionTime() # flag whether high resolution time is available
+    @count = INITIAL.count()
+    @time = INITIAL.time()
+    @registeredCallbacks = [] # collection of callbacks to test and run for each frame
 
   # shallow object merge
   #   see: http://stackoverflow.com/a/171256/167911
@@ -107,10 +118,6 @@ class Lockstep
   #   see: http://stackoverflow.com/a/14794066/167911
   _isInt: (value) ->
     not isNaN(value) and parseInt(Number(value)) is value and not isNaN(parseInt(value, 10))
-
-  # determine if a variable is Infinity (exclude -Infinity)
-  _isInf: (value) ->
-    value is Number.POSITIVE_INFINITY
 
   # determine if an object is empty (has no properties of its own)
   _isEmpty: (obj) ->
@@ -218,9 +225,6 @@ class Lockstep
             when 'count' # count object
               if not @_isValidCount(value)
                 throw new Error(errorMessageBad)
-            when 'executionQty'
-              if not (@_isInt(value) or @_isInf(value))
-                throw new Error(errorMessageBad)
             else
               if @_type(value) isnt validator # check standard data type
                 throw new Error(errorMessageBad)
@@ -235,15 +239,19 @@ class Lockstep
       floor: false # boolean; removes decimal (via Math.floor) from elapsed time output
     @_merge(defaults, options)
 
-  #
-  _fireCallbacks: (info) ->
-    for obj, i in @callbacks
-      obj.called++ # increment the called count
-      if obj.condition(info, obj.called) # if it passes the condition test
+  # run all registered callbacks and update meta object properties
+  _fireRegisteredCallbacks: (info) ->
+    runningTime = @time.running # cache the running time
+    for obj, i in @registeredCallbacks # go through every registered callback
+      obj.meta.called.count++ # increment the called count
+      obj.meta.called.last = runningTime # note the time
+      if obj.condition(info, obj.meta) # if it passes the condition test
         obj.callback(info) # run the callback
-        obj.passed++ # increment the passed count
-      else
-        obj.failed++ # increment the failed count
+        obj.meta.passed.count++ # increment the passed count
+        obj.meta.passed.last = runningTime # note the time
+      else # if it fails the condition test
+        obj.meta.failed.count++ # increment the failed count
+        obj.meta.failed.last = runningTime # note the time
 
   #
   _runningTimeToElapsedTime: (runningTime) ->
@@ -351,6 +359,30 @@ class Lockstep
     if info.count?
       @_adjustCount(operation, info.count)
 
+  # reset the timer
+  _resetTime: (called) ->
+    if @time.running > 0 or @time.stored > 0
+      @count.reset++ # increment reset counter
+      @time = INITIAL.time()
+      @time.last.reset = called
+      if @running
+        @time.last.start = called # set start & reset timestamps
+      return true
+    false
+
+  # if any counts are greater than 0, reset all and flag reset callback to run
+  _resetCount: ->
+    for key, val of @count
+      if val > 0
+        @count = INITIAL.count()
+        return true
+    false
+
+  # reset meta information for all registered callbacks
+  _resetMeta: ->
+    for obj in @registeredCallbacks
+      obj.meta = INITIAL.meta()
+
   #
   _loop: =>
     @pulse = raf(@_loop) # request next frame
@@ -362,7 +394,7 @@ class Lockstep
     @time.running = timeNow - @time.last.start
     info = @_getInfo()
     @settings.step(info)
-    @_fireCallbacks(info)
+    @_fireRegisteredCallbacks(info)
 
   #
   registerCallback: (condition, callback) ->
@@ -370,16 +402,13 @@ class Lockstep
       [condition, 'function', ERRMSG.condition.bad, ERRMSG.condition.missing]
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
-    @callbacks.push {
-      meta:
-        called: 0
-        passed: 0
-        failed: 0
+    @registeredCallbacks.push {
       condition
       callback
+      meta: INITIAL.meta()
     }
 
-  #
+  # if the timer is not running, start it
   start: (callback = @settings.start) ->
     called = now()
     @_validateArguments [
@@ -393,7 +422,7 @@ class Lockstep
       callback?(@_getInfo()) # TODO: ensure that info is time-accurate
     this
 
-  #
+  # if the timer is running, stop it
   stop: (callback = @settings.stop) ->
     called = now()
     @_validateArguments [
@@ -411,25 +440,18 @@ class Lockstep
     this
 
   #
-  reset: (callback = @settings.reset, count) ->
+  reset: (callback = @settings.reset, count = false, meta = true) ->
     called = now()
     @_validateArguments [
       [callback, 'function', ERRMSG.callback.bad]
     ]
-    if @time.running > 0 or @time.stored > 0
+    if @_resetTime(called)
       callbackEligible = true
-      @time.running = @time.stored = 0
-      @count.reset++
-      @time.last.reset = @time.last.start = called # set start & reset timestamps
-      @time.last.stop = null
-    if count # then if any counts are greater than 0, reset all
-      for key, val of @count
-        if val > 0
-          callbackEligible = true
-          @count.start = 0
-          @count.stop = 0
-          @count.reset = 0
-          break
+    if count
+      if @_resetCount()
+        callbackEligible = true
+    if meta
+      @_resetMeta()
     callbackEligible and callback?(@_getInfo()) # TODO: ensure that info is time-accurate
     this
 
@@ -473,21 +495,22 @@ class Lockstep
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
     @registerCallback((info, meta) =>
-      meta.passed is 0 and @_elapsedTimeToRunningTime(info.time.elapsed) >= @_toRunningTime(time)
+      meta.passed.count is 0 and @_elapsedTimeToRunningTime(info.time.elapsed) >= @_toRunningTime(time)
     , callback)
     this
 
   # run callback at a specified time interval
-  # TODO: use @when()
   every: (time, callback = @settings.every) ->
     @_validateArguments [
       [time, 'time', ERRMSG.time.bad, ERRMSG.noArguments]
       [callback, 'function', ERRMSG.callback.bad, ERRMSG.callback.missing]
     ]
+    @registerCallback((info, meta) =>
+      @_elapsedTimeToRunningTime(info.time.elapsed) - meta.passed.last >= @_toRunningTime(time)
+    , callback)
     this
 
   # run callback on each step through a specified time period
-  # TODO: use @when()
   while: (startTime, endTime, callback = @settings.while) ->
     @_validateArguments [
       [startTime, 'time', ERRMSG.startTime.bad, ERRMSG.noArguments]
@@ -500,7 +523,6 @@ class Lockstep
     this
 
   # run callback at the beginning of a specified time period, and another callback at the end
-  # TODO: use @when()
   during: (startTime, endTime, startCallback = @settings.duringStart, endCallback = @settings.duringEnd) ->
     @_validateArguments [
       [startTime, 'time', ERRMSG.startTime.bad, ERRMSG.noArguments]
@@ -508,25 +530,28 @@ class Lockstep
       [startCallback, 'function', ERRMSG.startCallback.bad, ERRMSG.startCallback.missing]
       [endCallback, 'function', ERRMSG.endCallback.bad, ERRMSG.endCallback.missing]
     ]
+    @when(startTime, startCallback)
+    @when(endTime, endCallback)
     this
 
   #
-  # TODO: use @during() with an infinity endTime
+  # TODO: use @while() with an infinity endTime
   beginning: (startTime, startCallback = @settings.beginning) ->
     @_validateArguments [
       [startTime, 'time', ERRMSG.startTime.bad, ERRMSG.noArguments]
       [startCallback, 'function', ERRMSG.startCallback.bad, ERRMSG.startCallback.missing]
     ]
-    @during(startTime, Infinity, startCallback, NOOP)
+    @while(startTime, Infinity, startCallback)
     this
 
   #
-  # TODO: use @during() with a zero startTime
+  # TODO: use @while() with a zero startTime
   ending: (endTime, endCallback = @settings.ending) ->
     @_validateArguments [
       [endTime, 'time', ERRMSG.time.bad, ERRMSG.noArguments]
       [endCallback, 'function', ERRMSG.endCallback.bad, ERRMSG.endCallback.missing]
     ]
+    @while(0, endTime, endCallback)
     this
 
 

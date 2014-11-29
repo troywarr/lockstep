@@ -140,6 +140,21 @@ describe 'Lockstep', ->
 
 
 
+  describe '#_isEmpty()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_isEmpty')
+
+    it 'should return true if supplied an empty object', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._isEmpty({})).to.equal(true)
+
+    it 'should return false if supplied an object with a property', ->
+      lockstep = new Lockstep(noop)
+      expect(lockstep._isEmpty({ foo: 1 })).to.equal(false)
+
+
+
   describe '#_hasHighResolutionTime()', ->
 
     it 'should be callable', ->
@@ -191,13 +206,6 @@ describe 'Lockstep', ->
 
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_isValidInfo')
-
-
-
-  describe '#_validateArguments()', ->
-
-    it 'should be callable', ->
-      expect(Lockstep).to.respondTo('_validateArguments')
 
 
 
@@ -257,6 +265,13 @@ describe 'Lockstep', ->
 
 
 
+  describe '#_validateArguments()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_validateArguments')
+
+
+
   describe '#_buildSettings()', ->
 
     it 'should be callable', ->
@@ -265,6 +280,13 @@ describe 'Lockstep', ->
     it 'should return an object', ->
       lockstep = new Lockstep(noop)
       expect(lockstep._buildSettings({})).to.be.an('object')
+
+
+
+  describe '#_fireRegisteredCallbacks()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_fireRegisteredCallbacks')
 
 
 
@@ -325,6 +347,13 @@ describe 'Lockstep', ->
     it 'should return a specific value', ->
       lockstep = new Lockstep(noop)
       expect(lockstep._clockTimeToRunningTime(clockTime)).to.equal(exampleTime)
+
+
+
+  describe '#_toRunningTime()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_toRunningTime')
 
 
 
@@ -475,6 +504,27 @@ describe 'Lockstep', ->
 
 
 
+  describe '#_resetTime()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_resetTime')
+
+
+
+  describe '#_resetCount()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_resetCount')
+
+
+
+  describe '#_resetMeta()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('_resetMeta')
+
+
+
   describe '#_loop()', ->
 
     it 'should be callable', ->
@@ -486,6 +536,19 @@ describe 'Lockstep', ->
 
     it 'should be callable', ->
       expect(Lockstep).to.respondTo('_step')
+
+
+
+  describe '#registerCallback()', ->
+
+    it 'should be callable', ->
+      expect(Lockstep).to.respondTo('registerCallback')
+
+    it 'should add one item to the registered callback collection', ->
+      lockstep = new Lockstep(noop)
+      registeredCallbacksLength = lockstep.registeredCallbacks.length
+      lockstep.registerCallback(noop, noop)
+      expect(lockstep.registeredCallbacks.length).to.equal(registeredCallbacksLength + 1)
 
 
 
@@ -545,11 +608,6 @@ describe 'Lockstep', ->
       lockstep = new Lockstep(noop)
       lockstep.start().reset()
       expect(lockstep.running).to.equal(true)
-
-    it 'should not increment stop counter if no arguments are passed', ->
-      lockstep = new Lockstep(noop)
-      lockstep.start().reset()
-      expect(lockstep.count.stop).to.equal(0)
 
     it 'should return the context object for chainability', ->
       lockstep = new Lockstep(noop)
